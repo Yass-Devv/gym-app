@@ -1,131 +1,142 @@
 import React, { useState } from "react";
-import { ls, USERS_KEY } from "../storage";
+import { api, setToken } from "../api";
+import { Logo, photo } from "./Shell";
+import "./auth.css";
 
+const MIN_PASSWORD = 6;
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+// Score 0-4 : longueur, majuscule/minuscule, chiffre, caractère spécial
+const passwordScore = (p) => {
+  if (!p) return 0;
+  let s = 0;
+  if (p.length >= MIN_PASSWORD) s++;
+  if (p.length >= 10) s++;
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++;
+  if (/\d/.test(p) && /[^A-Za-z0-9]/.test(p)) s++;
+  else if (/\d/.test(p) || /[^A-Za-z0-9]/.test(p)) s += 0.5;
+  return Math.min(4, Math.floor(s));
+};
+const SCORE_LABELS = ["Trop court", "Faible", "Correct", "Bon", "Très solide"];
+
 function Login({ onLogin, onCancel }) {
-  const [mode, setMode] = useState("login");
-  const [f, setF]       = useState({ name: "", email: "", password: "" });
-  const [errors, setErrors] = useState({});
+  const [mode, setMode]       = useState("login");
+  const [f, setF]             = useState({ name: "", email: "", password: "" });
+  const [errors, setErrors]   = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+
+  const isLogin = mode === "login";
+  const score   = passwordScore(f.password);
+
+  const set = (key) => (e) => {
+    setF({ ...f, [key]: e.target.value });
+    if (errors[key] || errors.general) setErrors({ ...errors, [key]: "", general: "" });
+  };
+
+  const switchMode = () => {
+    setMode(isLogin ? "register" : "login");
+    setErrors({});
+    setShowPwd(false);
+  };
 
   const validate = () => {
     const e = {};
-    if (mode === "register" && !f.name.trim())
-      e.name = "Le prénom est requis.";
-    if (!f.email.trim())
-      e.email = "L'email est requis.";
-    else if (!isValidEmail(f.email))
-      e.email = "Email invalide (ex: nom@domaine.com)";
-    if (!f.password)
-      e.password = "Le mot de passe est requis.";
-    else if (f.password.length < 4)
-      e.password = "Minimum 4 caractères.";
+    if (!isLogin && !f.name.trim()) e.name = "Le prénom est requis.";
+    if (!f.email.trim()) e.email = "L'e-mail est requis.";
+    else if (!isValidEmail(f.email)) e.email = "E-mail invalide (ex. : nom@domaine.com)";
+    if (!f.password) e.password = "Le mot de passe est requis.";
+    else if (!isLogin && f.password.length < MIN_PASSWORD) e.password = `Minimum ${MIN_PASSWORD} caractères.`;
     return e;
   };
 
-  const submit = () => {
+  const submit = async (ev) => {
+    ev.preventDefault();
+    if (loading) return;
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) return;
-    const users = ls.get(USERS_KEY, {});
-    if (mode === "login") {
-      if (!users[f.email.trim()] || users[f.email.trim()].password !== f.password) {
-        setErrors({ general: "Email ou mot de passe incorrect." });
-        return;
-      }
-      onLogin({ email: f.email.trim(), name: users[f.email.trim()].name, gender: users[f.email.trim()].gender });
-    } else {
-      if (users[f.email.trim()]) { setErrors({ email: "Cet email est déjà utilisé." }); return; }
-      users[f.email.trim()] = { name: f.name.trim(), password: f.password };
-      ls.set(USERS_KEY, users);
-      onLogin({ email: f.email.trim(), name: f.name.trim() });
+    setLoading(true);
+    try {
+      const { token, user } = isLogin
+        ? await api.login(f.email.trim(), f.password)
+        : await api.register(f.name.trim(), f.email.trim(), f.password);
+      setToken(token);
+      onLogin(user);
+    } catch (err) {
+      if (err.status === 409) setErrors({ email: err.message });
+      else if (err.status) setErrors({ general: err.message });
+      else setErrors({ general: "Serveur injoignable. Vérifie ta connexion et réessaie." });
+      setLoading(false);
     }
   };
 
-  const errStyle = { color: "#f87171", fontSize: 11, marginTop: 5, paddingLeft: 2, marginBottom: 8, display: "flex", alignItems: "center", gap: 4 };
-  const isLogin  = mode === "login";
-
   return (
-    <div className="auth-bg">
-      <div className="auth-card">
-
-        {/* ── GAUCHE : Formulaire ── */}
-        <div className="auth-left">
-          <div className="auth-logo">⚡ YASS-GYM</div>
-          <h2 className="auth-title">{isLogin ? "Bon retour 👋" : "Créer un compte"}</h2>
-          <p className="auth-sub">{isLogin ? "Connecte-toi pour suivre ta progression" : "Rejoins la communauté YASS-GYM"}</p>
-
-          {mode === "register" && (
-            <div>
-              <div className="auth-input-wrap">
-                <span className="auth-input-icon">👤</span>
-                <input className="gy-input" placeholder="Prénom" type="text" value={f.name}
-                  onChange={e => { setF({ ...f, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
-                  onKeyDown={e => e.key === "Enter" && submit()} autoFocus />
-              </div>
-              {errors.name && <div style={errStyle}>⚠ {errors.name}</div>}
-            </div>
-          )}
-
-          <div>
-            <div className="auth-input-wrap">
-              <span className="auth-input-icon">✉️</span>
-              <input className="gy-input" placeholder="Adresse email" type="email" value={f.email}
-                style={{ borderColor: errors.email ? "#ef4444" : undefined }}
-                onChange={e => { setF({ ...f, email: e.target.value }); setErrors({ ...errors, email: "" }); }}
-                onKeyDown={e => e.key === "Enter" && submit()} />
-            </div>
-            {errors.email && <div style={errStyle}>⚠ {errors.email}</div>}
-          </div>
-
-          <div>
-            <div className="auth-input-wrap">
-              <span className="auth-input-icon">🔒</span>
-              <input className="gy-input" placeholder="Mot de passe" type="password" value={f.password}
-                style={{ borderColor: errors.password ? "#ef4444" : undefined }}
-                onChange={e => { setF({ ...f, password: e.target.value }); setErrors({ ...errors, password: "" }); }}
-                onKeyDown={e => e.key === "Enter" && submit()} />
-            </div>
-            {errors.password && <div style={errStyle}>⚠ {errors.password}</div>}
-          </div>
-
-          {isLogin && (
-            <div className="auth-forgot">
-              <span>Mot de passe oublié ?</span>
-            </div>
-          )}
-
-          {errors.general && (
-            <div className="auth-err">⚠️ {errors.general}</div>
-          )}
-
-          <button className="btn-orange btn-orange-full" onClick={submit} style={{ marginTop: 4 }}>
-            {isLogin ? "Se connecter →" : "Créer mon compte →"}
-          </button>
-
-          {onCancel && (
-            <p style={{ textAlign: "center", marginTop: 14 }}>
-              <span style={{ color: "var(--textFaint)", cursor: "pointer", fontSize: 12 }} onClick={onCancel}>
-                ← Retour à l'accueil
-              </span>
-            </p>
-          )}
-        </div>
-
-        {/* ── DROITE : Branding ── */}
-        <div className="auth-right">
-          <div className="auth-right-logo">YASS-GYM</div>
-          <p className="auth-right-tagline">
-            {isLogin
-              ? "Pas encore de compte ?\nRejoins des milliers d'athlètes et commence ton parcours fitness dès aujourd'hui."
-              : "Tu as déjà un compte ?\nConnecte-toi pour retrouver tes séances, ta progression et tes stats."}
-          </p>
-          <button className="auth-right-switch-btn"
-            onClick={() => { setMode(isLogin ? "register" : "login"); setErrors({}); setF({ name:"", email:"", password:"" }); }}>
-            {isLogin ? "S'inscrire" : "Se connecter"}
-          </button>
-        </div>
+    <div className="screen">
+      <div className="lg-photo">
+        <img className="ph" src={photo(isLogin ? "barre-nb" : "rack")} alt="" />
+        <header className="bar">
+          <Logo />
+          {onCancel && <button type="button" className="link" onClick={onCancel}>Fermer</button>}
+        </header>
       </div>
+
+      <form className="lg-form" onSubmit={submit} noValidate key={mode}>
+        <h1 className="disp lg-title">
+          {isLogin ? <>Content de<br />te revoir.</> : <>Ouvre ton<br />carnet.</>}
+        </h1>
+
+        {!isLogin && (
+          <>
+            <div className={"field" + (errors.name ? " err" : "")}>
+              <label htmlFor="lg-name">Prénom</label>
+              <input id="lg-name" type="text" autoComplete="given-name" maxLength={100}
+                value={f.name} onChange={set("name")} />
+            </div>
+            {errors.name && <div className="field-err" role="alert">{errors.name}</div>}
+          </>
+        )}
+
+        <div className={"field" + (errors.email ? " err" : "")}>
+          <label htmlFor="lg-email">E-mail</label>
+          <input id="lg-email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none"
+            spellCheck="false" placeholder="nom@domaine.com" value={f.email} onChange={set("email")} />
+        </div>
+        {errors.email && <div className="field-err" role="alert">{errors.email}</div>}
+
+        <div className={"field" + (errors.password ? " err" : "")}>
+          <label htmlFor="lg-password">
+            <span>Mot de passe</span>
+            <button type="button" className="lg-show" onClick={() => setShowPwd(!showPwd)}>
+              {showPwd ? "Masquer" : "Afficher"}
+            </button>
+          </label>
+          <input id="lg-password" type={showPwd ? "text" : "password"}
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            placeholder={isLogin ? "" : `${MIN_PASSWORD} caractères minimum`}
+            value={f.password} onChange={set("password")} />
+        </div>
+        {errors.password && <div className="field-err" role="alert">{errors.password}</div>}
+        {!isLogin && f.password && (
+          <div className="lg-strength mono" data-score={score}>
+            <div className="lg-strength-bars"><i /><i /><i /><i /></div>
+            <span>{SCORE_LABELS[score]}</span>
+          </div>
+        )}
+
+        {errors.general && <div className="alert" role="alert">{errors.general}</div>}
+
+        <button type="submit" className="btn" disabled={loading}>
+          {loading
+            ? <span className="spin" aria-label="Chargement" />
+            : <><span>{isLogin ? "Se connecter" : "Créer mon compte"}</span><span aria-hidden="true">→</span></>}
+        </button>
+
+        <p className="lg-switch mono">
+          {isLogin ? "Pas de compte ? " : "Déjà inscrit ? "}
+          <button type="button" onClick={switchMode}>{isLogin ? "Créer le mien" : "Me connecter"}</button>
+        </p>
+      </form>
     </div>
   );
 }

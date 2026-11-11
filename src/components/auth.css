@@ -1,0 +1,88 @@
+/* ══════════════════════════════════════════════════════════════
+   Connexion (lg-*) et parcours d'accueil (ob-*)
+   S'appuie sur les variables et classes de App.css
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── CONNEXION ─────────────────────────────────────────────── */
+.lg-photo { position: relative; height: 38vh; min-height: 220px; max-height: 340px; overflow: hidden; background: var(--carbone); }
+.lg-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,11,11,.55) 0%, transparent 35%, var(--noir) 100%); }
+.lg-photo .bar { position: absolute; inset: 0 0 auto 0; z-index: 1; }
+.lg-form { padding: 0 20px calc(28px + env(safe-area-inset-bottom)); animation: rise .35s ease-out; }
+.lg-title { font-size: 48px; margin: -44px 0 20px; position: relative; }
+.lg-show { color: var(--os); font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 0; }
+.lg-strength { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; color: var(--gris); }
+.lg-strength-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; flex: 1; }
+.lg-strength-bars i { height: 3px; background: var(--trait); }
+.lg-strength[data-score="1"] i:nth-child(-n+1),
+.lg-strength[data-score="2"] i:nth-child(-n+2),
+.lg-strength[data-score="3"] i:nth-child(-n+3) { background: var(--os); }
+.lg-strength[data-score="4"] i { background: var(--acc); }
+.lg-form .btn { margin-top: 22px; }
+.lg-switch { margin-top: 18px; text-align: center; color: var(--gris); }
+.lg-switch button { color: var(--os); font: inherit; letter-spacing: inherit; text-transform: inherit; padding: 8px 4px; }
+
+/* ── PARCOURS D'ACCUEIL ────────────────────────────────────── */
+.ob-screen { display: flex; flex-direction: column; }
+.ob-progress { height: 2px; background: var(--trait); margin: 0 20px; }
+.ob-progress i { display: block; height: 100%; background: var(--acc); transition: width .35s ease; }
+.ob-body { flex: 1; padding: 24px 20px 16px; animation: rise .3s ease-out; }
+.ob-sub { color: var(--gris); margin: 10px 0 20px; }
+.ob-hint { color: var(--gris); font-size: 12.5px; margin-top: 16px; }
+.ob-foot { position: sticky; bottom: 0; z-index: 5; padding: 26px 20px calc(20px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--noir) 34%); }
+.ob-foot .link { display: block; margin: 8px auto 0; color: var(--gris); }
+
+/* Tuiles photo (sexe, activités) */
+.ob-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ob-tile { position: relative; height: 112px; overflow: hidden; text-align: left; background: var(--carbone); }
+.ob-tile.tall { height: 240px; }
+.ob-tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.85)); }
+.ob-tile span { position: absolute; left: 12px; bottom: 9px; z-index: 1; font-stretch: 62%; font-weight: 800; font-size: 19px; text-transform: uppercase; line-height: 1; }
+.ob-tile.tall span { font-size: 28px; }
+.ob-tile.on { outline: 2px solid var(--acc); outline-offset: -2px; }
+.ob-tile.on .ph { filter: grayscale(0) contrast(1.05); }
+.ob-tile.on::before { content: ""; position: absolute; top: 9px; right: 9px; width: 13px; height: 13px; background: var(--acc); z-index: 1; }
+
+/* Choix en liste numérotée (objectif, niveau) */
+.ob-opt { display: grid; grid-template-columns: 34px 1fr 16px; gap: 6px; align-items: center; width: 100%; text-align: left; border-top: 1px solid var(--trait); padding: 15px 0; }
+.ob-opt:last-of-type { border-bottom: 1px solid var(--trait); }
+.ob-opt .mono { color: var(--gris); }
+.ob-opt b { display: block; font-stretch: 75%; font-weight: 700; font-size: 19px; text-transform: uppercase; line-height: 1.1; }
+.ob-opt small { display: block; color: var(--gris); font-size: 13px; margin-top: 3px; }
+.ob-opt i { width: 13px; height: 13px; border: 1px solid var(--trait2); }
+.ob-opt.on b, .ob-opt.on .mono { color: var(--acc); }
+.ob-opt.on i { background: var(--acc); border-color: var(--acc); }
+.ob-h2 { display: block; color: var(--gris); margin: 26px 0 0; }
+
+/* Sélecteur de nombre */
+.ob-number { padding-top: 26px; }
+.ob-number-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 34px; }
+.ob-number-value { font-size: clamp(96px, 34vw, 150px); font-variant-numeric: tabular-nums; text-align: center; }
+.ob-number-value span { font-size: 22px; color: var(--gris); margin-left: 6px; }
+.ob-step { width: 54px; height: 54px; flex: none; border: 1px solid var(--trait2); font-size: 26px; font-weight: 300; line-height: 1; touch-action: manipulation; }
+.ob-step:active:not(:disabled) { background: var(--os); color: var(--noir); }
+.ob-step:disabled { opacity: .3; }
+.ob-range { -webkit-appearance: none; appearance: none; width: 100%; height: 34px; background: transparent; cursor: pointer; }
+.ob-range::-webkit-slider-runnable-track { height: 2px; background: var(--trait2); }
+.ob-range::-moz-range-track { height: 2px; background: var(--trait2); }
+.ob-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 30px; margin-top: -14px; background: var(--acc); border: none; border-radius: 0; }
+.ob-range::-moz-range-thumb { width: 14px; height: 30px; background: var(--acc); border: none; border-radius: 0; }
+.ob-range-ends { display: flex; justify-content: space-between; color: var(--gris); }
+
+/* Apple Santé */
+.ob-toggle { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; text-align: left; border: 1px solid var(--trait2); padding: 16px; }
+.ob-toggle.on { border-color: var(--acc); }
+.ob-toggle b { display: block; font-stretch: 75%; font-weight: 700; font-size: 17px; text-transform: uppercase; }
+.ob-toggle small { display: block; color: var(--gris); font-size: 13px; margin-top: 3px; }
+.ob-toggle .mono { flex: none; border: 1px solid var(--trait2); padding: 6px 9px; }
+.ob-toggle.on .mono { background: var(--acc); border-color: var(--acc); color: var(--noir); }
+
+/* Récapitulatif */
+.ob-recap .kpis b span { font-size: .4em; color: var(--gris); margin-left: 3px; }
+.ob-recap dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--trait); }
+.ob-recap dt { color: var(--gris); font: 500 11px/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.ob-recap dd { font-weight: 600; text-align: right; }
+
+@media (max-width: 350px) {
+  .lg-title { font-size: 40px; }
+  .ob-step { width: 46px; height: 46px; }
+}

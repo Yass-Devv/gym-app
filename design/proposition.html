@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YASS-GYM — Proposition de refonte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noir:#0b0b0b; --carbone:#161616; --trait:#2b2b2b;
+  --os:#ece8df; --gris:#8c8880; --vermillon:#ff4a1c;
+  --img:"../public/images/da/";
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--os);color:var(--noir);font:400 16px/1.5 Archivo,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font:500 11px/1.4 "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase}
+.disp{font-family:Archivo,sans-serif;font-stretch:62%;font-weight:800;text-transform:uppercase;line-height:.88;letter-spacing:-.01em}
+img{display:block;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.12)}
+
+/* ── Page ── */
+.wrap{max-width:1360px;margin:0 auto;padding:0 40px}
+.cover{background:var(--noir);color:var(--os);padding:36px 0 56px}
+.cover-top{display:flex;justify-content:space-between;border-bottom:1px solid var(--trait);padding-bottom:14px;color:var(--gris)}
+.cover h1{font-size:clamp(72px,13vw,196px);margin-top:48px}
+.cover h1 em{font-style:normal;color:var(--vermillon)}
+.cover p{max-width:560px;margin-top:28px;color:#bdb8ae;font-size:18px}
+section{padding:72px 0;border-bottom:1px solid #cfcabf}
+.sec-head{display:grid;grid-template-columns:120px 1fr;align-items:baseline;margin-bottom:40px}
+.sec-head .mono{color:var(--vermillon)}
+.sec-head h2{font-size:56px}
+
+.rules{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2px solid var(--noir)}
+.rules div{padding:20px 24px 0 0}
+.rules b{display:block;font-size:26px;margin:10px 0 8px}
+.rules p{font-size:15px;color:#4a4741}
+
+.spec{display:grid;grid-template-columns:1fr 1fr;gap:56px}
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--noir)}
+.sw{height:150px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end}
+.type-big{font-size:120px}
+.type-row{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #cfcabf;padding:14px 0}
+.type-row span:last-child{color:#6b675f}
+
+/* ── Téléphones ── */
+.phones{display:flex;flex-wrap:wrap;gap:56px 40px}
+.ph-wrap{width:300px}
+.ph-wrap .mono{display:flex;justify-content:space-between;margin-bottom:12px;color:#4a4741}
+.ph{position:relative;width:300px;height:640px;background:var(--noir);color:var(--os);overflow:hidden;border-radius:34px;border:8px solid #000;box-shadow:0 30px 60px -20px rgba(0,0,0,.45);font-size:13px}
+.ph .pad{padding:0 20px}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 12px}
+.logo{font-stretch:62%;font-weight:900;font-size:19px;letter-spacing:.02em}
+.logo i{font-style:normal;color:var(--vermillon)}
+.dim{color:var(--gris)}
+.btn{display:flex;justify-content:space-between;align-items:center;width:100%;height:50px;padding:0 18px;background:var(--vermillon);color:var(--noir);font-stretch:75%;font-weight:800;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+.btn.ghost{background:none;color:var(--os);border:1px solid var(--trait)}
+.full{position:absolute;inset:0}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,11,.55) 0%,rgba(11,11,11,0) 30%,rgba(11,11,11,.92) 78%)}
+.bottom{position:absolute;left:0;right:0;bottom:0;padding:0 20px 24px}
+.field{border-bottom:1px solid #4a4a4a;padding:14px 0 10px;margin-bottom:8px}
+.field .mono{color:var(--gris);font-size:9.5px}
+.field div{font-size:16px;margin-top:4px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tile{position:relative;height:104px;overflow:hidden}
+.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.8))}
+.tile span{position:absolute;left:10px;bottom:8px;z-index:1;font-stretch:62%;font-weight:800;font-size:17px;text-transform:uppercase}
+.tile.on{outline:2px solid var(--vermillon);outline-offset:-2px}
+.tile.on img{filter:grayscale(0) contrast(1.05)}
+.tile.on::before{content:"";position:absolute;top:8px;right:8px;width:12px;height:12px;background:var(--vermillon);z-index:1}
+.prog{height:2px;background:var(--trait);margin:0 20px}
+.prog i{display:block;height:100%;width:55%;background:var(--vermillon)}
+.tabs{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--trait);background:var(--noir);padding:14px 0 18px;text-align:center}
+.tabs span{font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--gris)}
+.tabs .on{color:var(--os)}
+.tabs .on::before{content:"";display:block;width:6px;height:6px;background:var(--vermillon);margin:-4px auto 6px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:14px 0}
+.week div{border:1px solid var(--trait);padding:7px 0;text-align:center;font:500 10px "IBM Plex Mono",monospace;color:var(--gris)}
+.week .done{background:var(--os);color:var(--noir);border-color:var(--os)}
+.week .today{border-color:var(--vermillon);color:var(--vermillon)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--trait)}
+.kpis div{padding:12px 0;border-right:1px solid var(--trait);padding-left:12px}
+.kpis div:first-child{padding-left:0}.kpis div:last-child{border:0}
+.kpis b{display:block;font-size:34px}
+.row{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--trait);padding:9px 0}
+.row .th{width:54px;height:54px}
+.row b{display:block;font-stretch:75%;font-weight:700;font-size:15px;text-transform:uppercase}
+.plus{width:30px;height:30px;border:1px solid #4a4a4a;display:grid;place-items:center;font-size:18px;font-weight:300}
+.chips{display:flex;gap:16px;border-bottom:1px solid var(--trait);padding-bottom:10px;margin:10px 0 4px;white-space:nowrap;overflow:hidden}
+.chips span{color:var(--gris)}.chips .on{color:var(--os);box-shadow:0 11px 0 -9px var(--vermillon)}
+table{width:100%;border-collapse:collapse;font:500 12px "IBM Plex Mono",monospace}
+th{font-size:9.5px;letter-spacing:.08em;color:var(--gris);text-align:left;font-weight:500;padding:6px 0;border-bottom:1px solid var(--trait)}
+td{padding:9px 0;border-bottom:1px solid var(--trait)}
+td:last-child,th:last-child{text-align:right}
+.sq{display:inline-block;width:11px;height:11px;border:1px solid #5a5a5a;vertical-align:-1px}
+.sq.ok{background:var(--vermillon);border-color:var(--vermillon)}
+tr.cur td{color:var(--vermillon)}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:92px;margin:14px 0 6px}
+.bars i{background:#3a3a3a}.bars i.hi{background:var(--vermillon)}
+.axis{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+
+.changes{display:grid;grid-template-columns:1fr 1fr;gap:0 56px}
+.changes div{display:grid;grid-template-columns:44px 1fr;border-top:1px solid #cfcabf;padding:16px 0}
+.changes .mono{color:var(--vermillon);padding-top:4px}
+footer{padding:40px 0 64px;color:#6b675f}
+@media(max-width:900px){.wrap{padding:0 20px}.rules,.spec,.changes{grid-template-columns:1fr}.sec-head{grid-template-columns:1fr}.sec-head h2{font-size:40px}.phones{justify-content:center}}
+</style>
+</head>
+<body>
+
+<div class="cover"><div class="wrap">
+  <div class="cover-top mono"><span>YASS-GYM — Refonte de l'identité</span><span>Proposition v1 · nov. 2026</span></div>
+  <h1 class="disp">Moins d'effets.<br>Plus de <em>fonte.</em></h1>
+  <p>Une direction éditoriale : photo noir et blanc, typographie condensée d'affiche de sport, une seule couleur d'accent. Aucun émoji, aucun dégradé, aucun halo lumineux.</p>
+</div></div>
+
+<div class="wrap">
+
+<section>
+  <div class="sec-head"><span class="mono">01</span><h2 class="disp">Les règles</h2></div>
+  <div class="rules">
+    <div><span class="mono">A</span><b class="disp">La photo d'abord</b><p>De vraies photos d'effort, toutes passées en noir et blanc pour former une série cohérente. Elles remplacent chaque émoji.</p></div>
+    <div><span class="mono">B</span><b class="disp">Une seule couleur</b><p>Le vermillon, hérité de l'orange actuel, posé à plat. Il ne sert qu'à l'action en cours et à ce qui est validé.</p></div>
+    <div><span class="mono">C</span><b class="disp">Le titre fait l'image</b><p>Des capitales condensées très grandes, comme une affiche de salle ou un maillot. Le reste du texte reste discret.</p></div>
+    <div><span class="mono">D</span><b class="disp">Des angles nets</b><p>Filets fins, angles droits, données alignées comme sur un carnet d'entraînement. Plus de cartes arrondies qui flottent.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="mono">02</span><h2 class="disp">Couleur et typographie</h2></div>
+  <div class="spec">
+    <div>
+      <div class="swatches">
+        <div class="sw mono" style="background:#0b0b0b;color:#ece8df">Noir<br>#0B0B0B</div>
+        <div class="sw mono" style="background:#161616;color:#ece8df">Carbone<br>#161616</div>
+        <div class="sw mono" style="background:#2b2b2b;color:#ece8df">Trait<br>#2B2B2B</div>
+        <div class="sw mono" style="background:#8c8880">Gris<br>#8C8880</div>
+        <div class="sw mono" style="background:#ece8df">Os<br>#ECE8DF</div>
+        <div class="sw mono" style="background:#ff4a1c">Vermillon<br>#FF4A1C</div>
+      </div>
+      <p style="margin-top:16px;color:#4a4741;font-size:15px">Le thème rose du mode Femme disparaît : une identité unique, la différence passe par le choix des photos et des exercices.</p>
+    </div>
+    <div>
+      <div class="disp type-big">Aa 0123</div>
+      <div class="type-row"><span class="disp" style="font-size:30px">Archivo condensé 800</span><span class="mono">Titres, chiffres clés</span></div>
+      <div class="type-row"><span style="font-size:18px">Archivo normal 400 — texte courant</span><span class="mono">Paragraphes</span></div>
+      <div class="type-row"><span class="mono" style="font-size:14px">IBM Plex Mono — 4 × 12 · 80 kg</span><span class="mono">Données, étiquettes</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="mono">03</span><h2 class="disp">Les écrans</h2></div>
+  <div class="phones">
+
+    <div class="ph-wrap"><div class="mono"><span>Accueil</span><span>01</span></div>
+    <div class="ph">
+      <div class="full"><img src="../public/images/da/hero-dos.jpg" alt=""></div><div class="shade"></div>
+      <div class="bar" style="position:relative"><span class="logo">YASS<i>—</i>GYM</span><span class="mono">Connexion</span></div>
+      <div class="bottom">
+        <div class="mono dim" style="margin-bottom:12px">Carnet d'entraînement</div>
+        <div class="disp" style="font-size:64px;margin-bottom:22px">Soulève.<br>Note.<br>Reviens.</div>
+        <div class="btn"><span>Commencer</span><span>→</span></div>
+      </div>
+    </div></div>
+
+    <div class="ph-wrap"><div class="mono"><span>Connexion</span><span>02</span></div>
+    <div class="ph">
+      <div style="height:250px;position:relative"><img src="../public/images/da/barre-nb.jpg" alt=""><div class="shade" style="background:linear-gradient(180deg,transparent 40%,#0b0b0b)"></div>
+        <div class="bar" style="position:absolute;top:0;left:0;right:0"><span class="logo">YASS<i>—</i>GYM</span><span class="mono">Fermer</span></div></div>
+      <div class="pad">
+        <div class="disp" style="font-size:44px;margin:-34px 0 18px;position:relative">Content de<br>te revoir.</div>
+        <div class="field"><div class="mono">E-mail</div><div>yassin@exemple.com</div></div>
+        <div class="field"><div class="mono" style="display:flex;justify-content:space-between"><span>Mot de passe</span><span style="color:var(--os)">Afficher</span></div><div>••••••••••</div></div>
+        <div class="btn" style="margin-top:20px"><span>Se connecter</span><span>→</span></div>
+        <div class="mono dim" style="margin-top:16px;text-align:center">Pas de compte ? <span style="color:var(--os)">Créer le mien</span></div>
+      </div>
+    </div></div>
+
+    <div class="ph-wrap"><div class="mono"><span>Parcours d'accueil</span><span>03</span></div>
+    <div class="ph">
+      <div class="bar"><span class="mono">← Retour</span><span class="mono dim">05 / 09</span></div>
+      <div class="prog"><i></i></div>
+      <div class="pad">
+        <div class="disp" style="font-size:44px;margin:22px 0 6px">Tu pratiques<br>quoi ?</div>
+        <div class="dim" style="margin-bottom:14px">Une ou plusieurs activités.</div>
+        <div class="tiles">
+          <div class="tile on"><img src="../public/images/da/musculation.jpg" alt=""><span>Musculation</span></div>
+          <div class="tile"><img src="../public/images/da/course.jpg" alt=""><span>Course</span></div>
+          <div class="tile on"><img src="../public/images/da/boxe.jpg" alt=""><span>Boxe</span></div>
+          <div class="tile"><img src="../public/images/da/danse.jpg" alt=""><span>Danse</span></div>
+          <div class="tile"><img src="../public/images/da/cardio.jpg" alt=""><span>Cardio</span></div>
+          <div class="tile"><img src="../public/images/da/natation.jpg" alt=""><span>Natation</span></div>
+        </div>
+      </div>
+      <div class="bottom" style="background:linear-gradient(180deg,transparent,#0b0b0b 35%);padding-top:30px"><div class="btn"><span>Continuer</span><span>2 choisies</span></div></div>
+    </div></div>
+
+    <div class="ph-wrap"><div class="mono"><span>Tableau de bord</span><span>04</span></div>
+    <div class="ph">
+      <div class="bar"><span class="logo">YASS<i>—</i>GYM</span><span class="mono dim">Mer. 11 nov.</span></div>
+      <div class="pad">
+        <div class="disp" style="font-size:44px;margin:6px 0 14px">Salut<br>Yassin.</div>
+        <div style="position:relative;height:178px">
+          <img src="../public/images/da/crossfit.jpg" alt=""><div class="shade" style="background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.85))"></div>
+          <div style="position:absolute;inset:auto 14px 14px 14px">
+            <div class="mono" style="color:var(--vermillon)">Aujourd'hui</div>
+            <div class="disp" style="font-size:30px;margin:4px 0 2px">Jambes et dos</div>
+            <div class="mono dim" style="color:#c9c4ba">6 exercices · 55 min</div>
+          </div>
+          <div style="position:absolute;top:0;right:0;background:var(--vermillon);color:var(--noir);padding:8px 12px" class="mono">Démarrer →</div>
+        </div>
+        <div class="week"><div class="done">L</div><div class="done">M</div><div class="today">M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+        <div class="kpis">
+          <div><b class="disp">12</b><span class="mono dim">Séances</span></div>
+          <div><b class="disp">4 850</b><span class="mono dim">Kcal</span></div>
+          <div><b class="disp">5</b><span class="mono dim">Jours de suite</span></div>
+        </div>
+      </div>
+      <div class="tabs"><span class="on">Accueil</span><span>Exercices</span><span>Séances</span><span>Suivi</span></div>
+    </div></div>
+
+    <div class="ph-wrap"><div class="mono"><span>Exercices</span><span>05</span></div>
+    <div class="ph">
+      <div class="bar"><span class="mono">← Retour</span><span class="mono dim">90 exercices</span></div>
+      <div class="pad">
+        <div class="disp" style="font-size:44px">Exercices</div>
+        <div class="chips mono"><span class="on">Tout</span><span>Pectoraux</span><span>Dos</span><span>Jambes</span><span>Bras</span></div>
+        <div class="row"><div class="th"><img src="../public/images/da/musculation.jpg" alt=""></div><div><b>Soulevé de terre</b><span class="mono dim">Dos · Barre</span></div><div class="plus">+</div></div>
+        <div class="row"><div class="th"><img src="../public/images/da/curl.jpg" alt=""></div><div><b>Curl barre EZ</b><span class="mono dim">Biceps · Barre</span></div><div class="plus">+</div></div>
+        <div class="row"><div class="th"><img src="../public/images/da/rack.jpg" alt=""></div><div><b>Développé militaire</b><span class="mono dim">Épaules · Barre</span></div><div class="plus" style="background:var(--vermillon);border-color:var(--vermillon);color:#0b0b0b">✓</div></div>
+        <div class="row"><div class="th"><img src="../public/images/da/haltere-main.jpg" alt=""></div><div><b>Rowing haltère</b><span class="mono dim">Dos · Haltères</span></div><div class="plus">+</div></div>
+        <div class="row"><div class="th"><img src="../public/images/da/abdos.jpg" alt=""></div><div><b>Crunch au sol</b><span class="mono dim">Abdos · Poids du corps</span></div><div class="plus">+</div></div>
+        <div class="row"><div class="th"><img src="../public/images/da/cardio.jpg" alt=""></div><div><b>Cordes ondulatoires</b><span class="mono dim">Cardio · Cordes</span></div><div class="plus">+</div></div>
+      </div>
+      <div class="tabs"><span>Accueil</span><span class="on">Exercices</span><span>Séances</span><span>Suivi</span></div>
+    </div></div>
+
+    <div class="ph-wrap"><div class="mono"><span>Séance en cours</span><span>06</span></div>
+    <div class="ph">
+      <div class="bar"><span class="mono">Terminer</span><span class="mono" style="color:var(--vermillon)">● 24:18</span></div>
+      <div style="height:150px;position:relative"><img src="../public/images/da/musculation.jpg" alt=""><div class="shade" style="background:linear-gradient(180deg,transparent 30%,#0b0b0b)"></div></div>
+      <div class="pad">
+        <div class="mono dim" style="margin-top:-18px;position:relative">Exercice 02 / 06</div>
+        <div class="disp" style="font-size:40px;margin:4px 0 14px;position:relative">Soulevé<br>de terre</div>
+        <table>
+          <tr><th>Série</th><th>Kg</th><th>Reps</th><th>Fait</th></tr>
+          <tr><td>01</td><td>80</td><td>10</td><td><i class="sq ok"></i></td></tr>
+          <tr><td>02</td><td>90</td><td>8</td><td><i class="sq ok"></i></td></tr>
+          <tr class="cur"><td>03</td><td>100</td><td>6</td><td><i class="sq"></i></td></tr>
+          <tr><td style="color:var(--gris)">04</td><td style="color:var(--gris)">100</td><td style="color:var(--gris)">6</td><td><i class="sq"></i></td></tr>
+        </table>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 12px"><span class="mono dim">Repos</span><span class="disp" style="font-size:40px">01:30</span></div>
+        <div class="btn"><span>Valider la série 03</span><span>→</span></div>
+      </div>
+    </div></div>
+
+    <div class="ph-wrap"><div class="mono"><span>Suivi</span><span>07</span></div>
+    <div class="ph">
+      <div class="bar"><span class="logo">YASS<i>—</i>GYM</span><span class="mono dim">Novembre</span></div>
+      <div class="pad">
+        <div class="mono dim">Soulevé ce mois-ci</div>
+        <div class="disp" style="font-size:76px;margin-top:2px">38 450<span style="font-size:26px;color:var(--gris)"> kg</span></div>
+        <div class="bars"><i style="height:45%"></i><i style="height:70%"></i><i class="hi" style="height:100%"></i><i style="height:0"></i><i style="height:60%"></i><i style="height:82%"></i><i style="height:30%"></i></div>
+        <div class="axis mono dim"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+        <div class="mono dim" style="margin:20px 0 4px">Dernières séances</div>
+        <div class="row" style="grid-template-columns:54px 1fr auto"><div class="th"><img src="../public/images/da/crossfit.jpg" alt=""></div><div><b>Jambes et dos</b><span class="mono dim">Lun. 9 nov. · 58 min</span></div><span class="mono">6 120 kg</span></div>
+        <div class="row"><div class="th"><img src="../public/images/da/boxe.jpg" alt=""></div><div><b>Boxe</b><span class="mono dim">Sam. 7 nov. · 45 min</span></div><span class="mono">520 kcal</span></div>
+        <div class="row"><div class="th"><img src="../public/images/da/dos.jpg" alt=""></div><div><b>Haut du corps</b><span class="mono dim">Jeu. 5 nov. · 62 min</span></div><span class="mono">5 480 kg</span></div>
+      </div>
+      <div class="tabs"><span>Accueil</span><span>Exercices</span><span>Séances</span><span class="on">Suivi</span></div>
+    </div></div>
+
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="mono">04</span><h2 class="disp">Ce qui change</h2></div>
+  <div class="changes">
+    <div><span class="mono">01</span><p><b>Émojis → photos.</b> Activités, exercices et séances sont illustrés par des photos. Les pictogrammes restants sont de simples signes typographiques.</p></div>
+    <div><span class="mono">02</span><p><b>Dégradés orange et halos → vermillon à plat.</b> Fond noir neutre au lieu du bleu nuit.</p></div>
+    <div><span class="mono">03</span><p><b>Trois polices mélangées → une famille.</b> Archivo dans deux largeurs, plus une police à chasse fixe pour les chiffres.</p></div>
+    <div><span class="mono">04</span><p><b>Cartes arrondies → filets et listes.</b> L'écran se lit comme un carnet, de haut en bas.</p></div>
+    <div><span class="mono">05</span><p><b>Menu en haut → barre d'onglets en bas.</b> Accueil, Exercices, Séances, Suivi, accessibles au pouce.</p></div>
+    <div><span class="mono">06</span><p><b>Thèmes Homme / Femme → une seule identité.</b> Le profil change le contenu, pas les couleurs.</p></div>
+  </div>
+</section>
+
+<footer class="mono">Maquette statique — les chiffres et les noms sont des exemples. Photos : Unsplash.</footer>
+</div>
+</body>
+</html>

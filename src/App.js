@@ -1,91 +1,109 @@
-import React, { useState } from "react";
-import { ls, SESSION_KEY, workoutKey, THEMES } from "./storage";
+import React, { useState, useEffect } from "react";
+import { ls, SESSION_KEY } from "./storage";
+import { api, getToken, clearToken } from "./api";
 import "./App.css";
 
 import Home          from "./components/Home";
 import Login         from "./components/Login";
-import GenderPicker  from "./components/Genderpicker";
+import Onboarding    from "./components/Onboarding";
 import ExercisesPage from "./components/Exercisespage";
 import SeancePage    from "./components/Seancepage";
 import HistoryPage   from "./components/Historypage";
+import Settings      from "./components/Settings";
+import { TabBar }    from "./components/Shell";
+
+// Session en cache local (affichage immédiat), uniquement si un token existe
+const cachedUser = () => (getToken() ? ls.get(SESSION_KEY) : null);
+
+// Écrans accessibles depuis la barre d'onglets
+const TAB_PAGES = ["accueil", "exercises", "seance", "history"];
+
+// Apparence : préférence de l'appareil, gardée en local
+const THEME_KEY = "yassgym_theme";
+const THEME_BG  = { sombre: "#0b0b0b", clair: "#f4ecdf" };
 
 function App() {
-  const [page, setPage]     = useState("accueil");
-  const [user, setUser]     = useState(() => ls.get(SESSION_KEY));
-  const [gender, setGender] = useState(() => ls.get(SESSION_KEY)?.gender || null);
-  const [seanceItems, setSeanceItems] = useState(() => {
-    const u = ls.get(SESSION_KEY);
-    return u ? ls.get(workoutKey(u.email), []) : [];
-  });
+  const [page, setPage]   = useState("accueil");
+  const [user, setUser]   = useState(cachedUser);
+  const [theme, setTheme] = useState(() => (ls.get(THEME_KEY) === "clair" ? "clair" : "sombre"));
+  // Séance à ouvrir directement en arrivant sur l'onglet Séances (depuis le tableau de bord)
+  const [openSeanceId, setOpenSeanceId] = useState(null);
 
-  const theme = THEMES[gender] || THEMES.homme;
-  const root  = document.documentElement;
-  Object.entries(theme).forEach(([k, v]) => root.style.setProperty("--" + k, v));
+  const gender = user?.gender || null;
 
-  const handleLogin = (u) => {
-    ls.set(SESSION_KEY, u);
-    setUser(u);
-    setGender(u.gender || null);
-    setSeanceItems(ls.get(workoutKey(u.email), []));
-    if (u.gender) setPage("accueil");
-    else          setPage("gender");
-  };
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_BG[theme]);
+    ls.set(THEME_KEY, theme);
+  }, [theme]);
 
-  const handleGender = (g) => {
-    const updated = { ...user, gender: g };
-    ls.set(SESSION_KEY, updated);
-    setUser(updated);
-    setGender(g);
-    setPage("accueil");
-  };
+  const go = (p) => { setPage(p); window.scrollTo(0, 0); };
+
+  const saveUser = (u) => { ls.set(SESSION_KEY, u); setUser(u); };
 
   const handleLogout = () => {
+    clearToken();
     ls.del(SESSION_KEY);
     setUser(null);
-    setGender(null);
-    setSeanceItems([]);
-    setPage("accueil");
+    go("accueil");
   };
 
-  const addToSeance = (ex) => {
-    if (!user) return;
-    const cur     = ls.get(workoutKey(user.email), []);
-    const updated = [...cur, { ex, sets: "3", reps: "", weight: "" }];
-    ls.set(workoutKey(user.email), updated);
-    setSeanceItems(updated);
+  // Au démarrage : on revalide la session auprès de l'API
+  useEffect(() => {
+    if (!getToken()) return;
+    api.me()
+      .then((u) => {
+        saveUser(u);
+        if (!u.onboarded) go("onboarding");
+      })
+      .catch((err) => {
+        if (err.status === 401 || err.status === 404) handleLogout();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLogin = (u) => {
+    saveUser(u);
+    go(u.onboarded ? "accueil" : "onboarding");
   };
 
-  const clearSeance = () => {
-    if (user) ls.del(workoutKey(user.email));
-    setSeanceItems([]);
-  };
+  const goSeance = (id) => { setOpenSeanceId(id); go("seance"); };
+
+  // Les écrans internes demandent un compte
+  const needsUser = TAB_PAGES.includes(page) || page === "settings" || page === "profile";
+  const current = !user && needsUser ? "accueil" : page;
 
   return (
     <div className="App">
-      {page === "accueil" && (
+      {current === "accueil" && (
         <Home
-          user={user} gender={gender} seanceCount={seanceItems.length}
-          onLoginClick={() => setPage("login")}
-          onLogout={handleLogout}
-          onGoExercises={() => setPage("exercises")}
-          onGoSeance={()    => setPage("seance")}
-          onGoHistory={()   => setPage("history")}
-          onSwitchGender={() => setPage("gender")}
+          user={user}
+          onLoginClick={() => go("login")}
+          onGoExercises={() => go("exercises")}
+          onGoSeance={goSeance}
+          onGoHistory={() => go("history")}
+          onGoSettings={() => go("settings")}
         />
       )}
-      {page === "login"  && <Login onLogin={handleLogin} onCancel={() => setPage("accueil")} />}
-      {page === "gender" && <GenderPicker user={user} onPick={handleGender} />}
-      {page === "exercises" && (
-        <ExercisesPage user={user} gender={gender} onAddToSeance={addToSeance} onBack={() => setPage("accueil")} />
+      {current === "login" && <Login onLogin={handleLogin} onCancel={() => go("accueil")} />}
+      {current === "onboarding" && user && (
+        <Onboarding user={user} onDone={(u) => { saveUser(u); go("accueil"); }} onLogout={handleLogout} />
       )}
-      {page === "seance" && (
-        <SeancePage user={user} gender={gender} seanceItems={seanceItems}
-          setSeanceItems={setSeanceItems}
-          onSave={() => { clearSeance(); setPage("history"); }}
-          onBack={() => setPage("accueil")} />
+      {current === "profile" && (
+        <Onboarding user={user} onDone={(u) => { saveUser(u); go("settings"); }} onClose={() => go("settings")} />
       )}
-      {page === "history" && (
-        <HistoryPage user={user} gender={gender} onBack={() => setPage("accueil")} />
+      {current === "settings" && (
+        <Settings user={user} theme={theme} onTheme={setTheme} onUser={saveUser}
+          onBack={() => go("accueil")} onEditProfile={() => go("profile")} onLogout={handleLogout} />
+      )}
+      {current === "exercises" && <ExercisesPage user={user} gender={gender} onGoSeance={goSeance} />}
+      {current === "seance" && (
+        <SeancePage user={user} gender={gender} openId={openSeanceId} onOpened={() => setOpenSeanceId(null)} />
+      )}
+      {current === "history" && <HistoryPage user={user} />}
+
+      {user && TAB_PAGES.includes(current) && (
+        <TabBar page={current} onNav={(p) => (p === "seance" ? goSeance(null) : go(p))} />
       )}
     </div>
   );

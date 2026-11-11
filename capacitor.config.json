@@ -1,0 +1,9 @@
+{
+  "appId": "com.yassgym.app",
+  "appName": "YASS-GYM",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

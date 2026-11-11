@@ -1,300 +1,220 @@
-import React, { useState } from "react";
-import { ls, histKey, statsKey } from "../storage";
+import React, { useState, useEffect } from "react";
+import { api } from "../api";
+import { Logo, plural, fromKg, unitLabel } from "./Shell";
+
+const toKg = (w, unit) => (unit === "lbs" ? w * 0.453592 : w);
+const nf   = (n) => Math.round(n).toLocaleString("fr-FR");
+const DAY  = 86400000;
 
 // ─── CALCUL EVOLUTION ────────────────────────────────────────────────────────
 // Pour un exercice donné dans une séance, on cherche la dernière fois
 // qu'il a été fait dans une séance PRÉCÉDENTE et on compare le poids
 function getEvolution(hist, sessionIndex, exName, currentWeight, currentUnit) {
-  // Convertit tout en kg pour comparer
-  const toKg = (w, unit) => unit === "lbs" ? w * 0.453592 : w;
   const currentKg = toKg(currentWeight, currentUnit);
 
-  // Cherche dans les séances plus anciennes (index > sessionIndex = plus ancien car hist[0] = plus récent)
+  // hist[0] = plus récent : les séances plus anciennes ont un index plus grand
   for (let i = sessionIndex + 1; i < hist.length; i++) {
-    const prevSession = hist[i];
-    const prevEx = prevSession.exercises?.find(e => e.name === exName);
+    const prevEx = hist[i].exercises?.find(e => e.name === exName);
     if (prevEx && prevEx.weight > 0) {
-      const prevKg   = toKg(prevEx.weight, prevEx.unit || "kg");
-      const diffKg   = currentKg - prevKg;
-      const diffDisp = currentUnit === "lbs"
-        ? +(diffKg / 0.453592).toFixed(1)
-        : +diffKg.toFixed(1);
-      if (diffKg > 0)  return { type:"up",   diff: diffDisp, unit: currentUnit };
-      if (diffKg < 0)  return { type:"down", diff: Math.abs(diffDisp), unit: currentUnit };
+      const diffKg   = currentKg - toKg(prevEx.weight, prevEx.unit || "kg");
+      const diffDisp = currentUnit === "lbs" ? +(diffKg / 0.453592).toFixed(1) : +diffKg.toFixed(1);
+      if (diffKg > 0) return { type:"up",   diff: diffDisp, unit: currentUnit };
+      if (diffKg < 0) return { type:"down", diff: Math.abs(diffDisp), unit: currentUnit };
       return { type:"same" };
     }
   }
   return null; // Première fois cet exercice
 }
 
-// ─── BADGE EVOLUTION ─────────────────────────────────────────────────────────
-function EvoBadge({ evo }) {
+// ─── ÉVOLUTION (texte) ───────────────────────────────────────────────────────
+function Evo({ evo }) {
   if (!evo) return null;
-  if (evo.type === "same") return (
-    <span style={{
-      background:"rgba(100,116,139,0.15)", border:"1px solid rgba(100,116,139,0.3)",
-      borderRadius:6, padding:"2px 7px", fontSize:11, color:"#94a3b8", marginLeft:6,
-    }}>= même poids</span>
-  );
-  const isUp = evo.type === "up";
+  if (evo.type === "same") return <span className="evo">=</span>;
+  const up = evo.type === "up";
   return (
-    <span style={{
-      background: isUp ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-      border: `1px solid ${isUp ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`,
-      borderRadius:6, padding:"2px 8px", fontSize:11,
-      color: isUp ? "#22c55e" : "#ef4444",
-      fontWeight:700, marginLeft:6, display:"inline-flex", alignItems:"center", gap:3,
-    }}>
-      {isUp ? "▲" : "▼"} {isUp ? "+" : "-"}{evo.diff}{evo.unit}
+    <span className={"evo" + (up ? " up" : "")}>
+      {up ? "▲ +" : "▼ −"}{String(evo.diff).replace(".", ",")} {unitLabel(evo.unit)}
     </span>
   );
 }
 
-// ─── HISTORY PAGE ─────────────────────────────────────────────────────────────
-function HistoryPage({ user, gender, onBack }) {
-  const [tab, setTab] = useState("seances"); // "seances" | "progres"
+// ─── PAGE SUIVI ───────────────────────────────────────────────────────────────
+function HistoryPage({ user }) {
+  const [tab, setTab]         = useState("seances"); // "seances" | "progres"
+  const [hist,    setHist]    = useState([]);
+  const [stats,   setStats]   = useState({ totalCal:0, totalSessions:0, streak:0 });
+  const [loading, setLoading] = useState(!!user);
+  const [error,   setError]   = useState("");
 
-  if (!user) {
-    return (
-      <div>
-        <div className="gy-header">
-          <div className="gy-logo">⚡ YASS-GYM</div>
-          <button className="btn-ghost" onClick={onBack}>← Accueil</button>
-        </div>
-        <div className="empty-box">
-          <div className="empty-icon">🔒</div>
-          <p>Connecte-toi pour voir ton historique</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([api.getHistory(), api.getStats()])
+      .then(([h, s]) => { setHist(h); setStats(s); })
+      .catch(err => setError(err.status ? err.message : "Serveur injoignable."))
+      .finally(() => setLoading(false));
+  }, [user]);
 
-  const hist  = ls.get(histKey(user.email), []);
-  const stats = ls.get(statsKey(user.email), { totalCal:0, totalSessions:0, streak:0 });
+  const now = Date.now();
+  const month = hist.filter(h => now - h.ts < 30 * DAY);
+  const monthCals = month.reduce((s, h) => s + h.totalCal, 0);
 
-  const weekCals  = hist.filter(h => Date.now() - h.ts < 7  * 86400000).reduce((s,h) => s + h.totalCal, 0);
-  const monthCals = hist.filter(h => Date.now() - h.ts < 30 * 86400000).reduce((s,h) => s + h.totalCal, 0);
+  // Charge totale soulevée sur 30 jours : séries × répétitions × poids
+  const monthVolume = month.reduce((sum, h) =>
+    sum + (h.exercises || []).reduce((s, e) => s + (e.sets || 0) * (e.reps || 0) * toKg(e.weight || 0, e.unit), 0), 0);
+
+  // Calories par jour sur les 7 derniers jours (aujourd'hui à droite)
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const start = today.getTime() - (6 - i) * DAY;
+    const cal = hist.filter(h => h.ts >= start && h.ts < start + DAY).reduce((s, h) => s + h.totalCal, 0);
+    return { cal, label: new Date(start).toLocaleDateString("fr-FR", { weekday: "narrow" }) };
+  });
+  const maxCal = Math.max(...last7.map(d => d.cal), 1);
+
   const GOAL = 2000;
   const pct  = Math.min(100, Math.round((monthCals / GOAL) * 100));
 
-  // ─── CALCUL PROGRESSION PAR EXERCICE ──────────────────────────────────────
-  // Regroupe toutes les occurrences de chaque exercice par nom
+  // Progression par exercice : toutes les occurrences avec un poids
   const progressMap = {};
-  hist.forEach((session, sIdx) => {
+  hist.forEach(session => {
     session.exercises?.forEach(ex => {
-      if (!ex.weight || ex.weight === 0) return;
-      if (!progressMap[ex.name]) progressMap[ex.name] = [];
-      progressMap[ex.name].push({
-        date:    session.date,
-        ts:      session.ts,
-        sets:    ex.sets,
-        reps:    ex.reps,
-        weight:  ex.weight,
-        unit:    ex.unit || "kg",
-        calories:ex.calories,
-        sIdx,
+      if (!ex.weight) return;
+      (progressMap[ex.name] = progressMap[ex.name] || []).push({
+        date: session.date, ts: session.ts, sets: ex.sets, reps: ex.reps,
+        weight: ex.weight, unit: ex.unit || "kg",
       });
     });
   });
 
-  const statCards = [
-    { icon:"🔥", val:stats.totalCal.toLocaleString(), unit:"kcal",    label:"Total calories",  color:"#f97316" },
-    { icon:"🏋️", val:stats.totalSessions,            unit:"séances", label:"Séances totales", color:"#3b82f6" },
-    { icon:"⚡", val:stats.streak,                   unit:"jours",   label:"Streak actuel",   color:"#f59e0b" },
-    { icon:"📅", val:weekCals.toLocaleString(),      unit:"kcal",    label:"Cette semaine",   color:"#22c55e" },
-  ];
-
   return (
-    <div>
-      <div className="gy-header">
-        <div className="gy-logo">⚡ YASS-GYM</div>
-        <button className="btn-ghost" onClick={onBack}>← Accueil</button>
-      </div>
+    <div className="screen with-tabs">
+      <header className="bar">
+        <Logo />
+        <span className="mono dim">30 derniers jours</span>
+      </header>
 
-      <div className="gy-content">
-        <h2 className="gy-page-title">📈 Mon Historique</h2>
+      <div className="pad">
+        {loading ? (
+          <div className="empty">Chargement du suivi…</div>
+        ) : error ? (
+          <div className="alert" role="alert">{error}</div>
+        ) : (
+          <>
+            <div className="mono dim" style={{ marginTop: 6 }}>Charge soulevée</div>
+            <div className="disp big">{nf(fromKg(monthVolume, user.unit))}<span> {unitLabel(user.unit)}</span></div>
 
-        {/* Stats */}
-        <div className="stats-grid">
-          {statCards.map(s => (
-            <div className="stat-card" key={s.label} style={{ borderColor:s.color+"44" }}>
-              <div className="stat-icon">{s.icon}</div>
-              <div className="stat-val" style={{ color:s.color }}>{s.val}</div>
-              <div className="stat-unit">{s.unit}</div>
-              <div className="stat-lbl">{s.label}</div>
+            <div className="bars" aria-label="Calories dépensées sur les 7 derniers jours">
+              {last7.map((d, i) => (
+                <i key={i} className={i === 6 ? "hi" : ""} style={{ height: `${(d.cal / maxCal) * 100}%` }}
+                  title={`${d.cal} kcal`} />
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="axis mono">{last7.map((d, i) => <span key={i}>{d.label}</span>)}</div>
 
-        {/* Objectif mensuel */}
-        <div className="progress-box">
-          <div className="progress-label">
-            <span>Objectif mensuel ({GOAL} kcal)</span>
-            <span>{monthCals} / {GOAL} kcal · {pct}%</span>
-          </div>
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width:pct+"%" }} />
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display:"flex", border:"1px solid var(--border2)", borderRadius:10, overflow:"hidden", marginBottom:20 }}>
-          {[["seances","🗓️ Séances"],["progres","📊 Progression"]].map(([key,label]) => (
-            <button key={key} onClick={() => setTab(key)} style={{
-              flex:1, background: tab===key ? "var(--primary)" : "none",
-              border:"none", padding:"10px", cursor:"pointer",
-              color: tab===key ? "#fff" : "var(--textFaint)",
-              fontFamily:"'Rajdhani',sans-serif", fontSize:14, fontWeight:700,
-              transition:"all .2s",
-            }}>{label}</button>
-          ))}
-        </div>
-
-        {/* ── TAB SEANCES ── */}
-        {tab === "seances" && (
-          hist.length === 0 ? (
-            <div className="empty-box">
-              <div className="empty-icon">💪</div>
-              <p>Aucune séance enregistrée.<br/>Lance-toi !</p>
+            <div className="kpis" style={{ marginTop: 22 }}>
+              <div><b className="disp">{stats.totalSessions}</b><span className="mono dim">Séance{stats.totalSessions > 1 ? "s" : ""}</span></div>
+              <div><b className="disp">{nf(stats.totalCal)}</b><span className="mono dim">Kcal au total</span></div>
+              <div><b className="disp">{stats.streak}</b><span className="mono dim">Jour{stats.streak > 1 ? "s" : ""} de suite</span></div>
             </div>
-          ) : hist.map((h, i) => (
-            <div className="hist-card" key={i}>
-              <div className="hist-top">
-                <div>
-                  {h.seanceName && (
-                    <div style={{
-                      display:"inline-block", background:"var(--primaryBg)",
-                      border:"1px solid var(--primaryBorder)", borderRadius:6,
-                      padding:"2px 10px", fontSize:11, color:"var(--primary)",
-                      fontWeight:700, marginBottom:4,
-                    }}>🏃 {h.seanceName}</div>
-                  )}
-                  <div className="hist-date">📅 {h.date} à {h.time}</div>
-                  <div className="hist-cals">🔥 {h.totalCal} calories brûlées</div>
-                </div>
-                <div className="hist-count">{h.exercises.length} ex.</div>
-              </div>
-              <div className="hist-ex-list">
-                {h.exercises.map((e, j) => {
-                  const evo = getEvolution(hist, i, e.name, e.weight, e.unit||"kg");
-                  return (
-                    <div className="hist-ex-item" key={j}>
-                      <span className="hist-ex-name">{e.name}</span>
-                      <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", justifyContent:"flex-end", gap:4 }}>
-                        <span className="hist-ex-detail">
-                          {e.sets}×{e.reps} · {e.weight}{e.unit} · {e.calories} cal
-                        </span>
-                        <EvoBadge evo={evo} />
-                      </div>
-                    </div>
-                  );
-                })}
+
+            <div className="goal">
+              <div className="goal-top mono"><span>Objectif du mois</span><span>{nf(monthCals)} / {nf(GOAL)} kcal</span></div>
+              <div className="goal-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+                <i style={{ width: pct + "%" }} />
               </div>
             </div>
-          ))
-        )}
 
-        {/* ── TAB PROGRESSION ── */}
-        {tab === "progres" && (
-          Object.keys(progressMap).length === 0 ? (
-            <div className="empty-box">
-              <div className="empty-icon">📊</div>
-              <p>Fais des séances avec des poids pour voir ta progression ici !</p>
+            <div className="chips" role="tablist">
+              {[["seances", "Séances"], ["progres", "Progression"]].map(([key, label]) => (
+                <button type="button" key={key} role="tab" aria-selected={tab === key}
+                  className={tab === key ? "on" : ""} onClick={() => setTab(key)}>{label}</button>
+              ))}
             </div>
-          ) : (
-            Object.entries(progressMap).map(([exName, entries]) => {
-              // Trie du plus ancien au plus récent pour le graphe
-              const sorted  = [...entries].sort((a,b) => a.ts - b.ts);
-              const first   = sorted[0];
-              const last    = sorted[sorted.length - 1];
-              const toKg    = (w, u) => u === "lbs" ? w * 0.453592 : w;
-              const totalDiff = toKg(last.weight, last.unit) - toKg(first.weight, first.unit);
-              const isPos   = totalDiff > 0;
-              const isNeg   = totalDiff < 0;
-              const maxW    = Math.max(...sorted.map(e => toKg(e.weight, e.unit)));
 
-              return (
-                <div key={exName} style={{
-                  background:"var(--surface)", border:"1px solid var(--border)",
-                  borderRadius:14, padding:"16px 18px", marginBottom:12,
-                }}>
-                  {/* Header */}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            {/* ── Séances passées ── */}
+            {tab === "seances" && (
+              hist.length === 0 ? (
+                <div className="empty"><b className="disp">Rien encore</b>Termine une séance pour la retrouver ici.</div>
+              ) : hist.map((h, i) => (
+                <div className="hist" key={h.id ?? i} style={i === 0 ? { borderTop: 0 } : undefined}>
+                  <div className="hist-top">
                     <div>
-                      <div style={{ fontFamily:"'Rajdhani',sans-serif", fontSize:17, fontWeight:700, color:"var(--text)" }}>
-                        {exName}
-                      </div>
-                      <div style={{ color:"var(--textFaint)", fontSize:11 }}>{entries.length} séance{entries.length>1?"s":""}</div>
+                      <span className="mono dim">{h.date} · {h.time}</span>
+                      <span className="title" style={{ fontSize: 21, marginTop: 2 }}>{h.seanceName || "Séance libre"}</span>
                     </div>
-                    {sorted.length > 1 && (
-                      <div style={{
-                        background: isPos ? "rgba(34,197,94,0.15)" : isNeg ? "rgba(239,68,68,0.15)" : "rgba(100,116,139,0.15)",
-                        border: `1px solid ${isPos?"rgba(34,197,94,0.4)":isNeg?"rgba(239,68,68,0.4)":"rgba(100,116,139,0.3)"}`,
-                        borderRadius:8, padding:"6px 12px", textAlign:"center",
-                      }}>
-                        <div style={{
-                          fontFamily:"'Rajdhani',sans-serif", fontSize:18, fontWeight:700,
-                          color: isPos ? "#22c55e" : isNeg ? "#ef4444" : "#94a3b8",
-                        }}>
-                          {isPos ? "▲ +" : isNeg ? "▼ -" : "="}{Math.abs(+totalDiff.toFixed(1))}kg
-                        </div>
-                        <div style={{ color:"var(--textFaint)", fontSize:10 }}>progression totale</div>
+                    <span className="mono acc">{nf(h.totalCal)} kcal</span>
+                  </div>
+                  {h.exercises.map((e, j) => (
+                    <div className="hist-line" key={j}>
+                      <span>{e.name}</span>
+                      <span className="mono">
+                        {e.sets} × {e.reps}{e.weight > 0 ? ` · ${String(e.weight).replace(".", ",")} ${unitLabel(e.unit)}` : ""}
+                        <Evo evo={getEvolution(hist, i, e.name, e.weight, e.unit || "kg")} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+
+            {/* ── Progression par exercice ── */}
+            {tab === "progres" && (
+              Object.keys(progressMap).length === 0 ? (
+                <div className="empty"><b className="disp">Pas de charges</b>Note un poids dans tes séances pour suivre ta progression.</div>
+              ) : Object.entries(progressMap).map(([exName, entries], n) => {
+                const sorted = [...entries].sort((a, b) => a.ts - b.ts);
+                const first  = sorted[0];
+                const last   = sorted[sorted.length - 1];
+                const total  = toKg(last.weight, last.unit) - toKg(first.weight, first.unit);
+                const maxW   = Math.max(...sorted.map(e => toKg(e.weight, e.unit)));
+
+                return (
+                  <div className="hist" key={exName} style={n === 0 ? { borderTop: 0 } : undefined}>
+                    <div className="hist-top">
+                      <div>
+                        <span className="mono dim">{plural(entries.length, "séance")}</span>
+                        <span className="title" style={{ fontSize: 21, marginTop: 2 }}>{exName}</span>
                       </div>
-                    )}
-                  </div>
+                      {sorted.length > 1 && (
+                        <span className={"mono" + (total > 0 ? " acc" : " dim")}>
+                          {total > 0 ? "▲ +" : total < 0 ? "▼ −" : "= "}{String(Math.abs(+total.toFixed(1))).replace(".", ",")} kg
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Mini graphe barres */}
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:50, marginBottom:8 }}>
-                    {sorted.map((e, idx) => {
-                      const h = maxW > 0 ? Math.max(8, (toKg(e.weight,e.unit) / maxW) * 50) : 8;
-                      const isLast = idx === sorted.length - 1;
-                      return (
-                        <div key={idx} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-                          <div style={{ fontSize:9, color:"var(--textFaint)" }}>{e.weight}{e.unit}</div>
-                          <div style={{
-                            width:"100%", height:h,
-                            background: isLast ? "var(--primary)" : "var(--surface2)",
-                            border: `1px solid ${isLast ? "var(--primaryBorder)" : "var(--border2)"}`,
-                            borderRadius:"4px 4px 0 0",
-                            transition:"all .3s",
-                          }}/>
+                    <div className="mini" aria-hidden="true">
+                      {sorted.map((e, idx) => (
+                        <div key={idx}>
+                          {e.weight}
+                          <i style={{ height: Math.max(4, (toKg(e.weight, e.unit) / maxW) * 38) }} />
                         </div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
 
-                  {/* Timeline des entrées */}
-                  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
                     {sorted.map((e, idx) => {
-                      const prev = idx > 0 ? sorted[idx-1] : null;
+                      const prev = sorted[idx - 1];
                       let evo = null;
                       if (prev) {
-                        const toKgV = (w,u) => u==="lbs"?w*0.453592:w;
-                        const diff  = toKgV(e.weight,e.unit) - toKgV(prev.weight,prev.unit);
-                        if (diff > 0)  evo = { type:"up",   diff:+diff.toFixed(1), unit:"kg" };
-                        if (diff < 0)  evo = { type:"down", diff:+Math.abs(diff).toFixed(1), unit:"kg" };
-                        if (diff === 0) evo = { type:"same" };
+                        const diff = toKg(e.weight, e.unit) - toKg(prev.weight, prev.unit);
+                        evo = diff > 0 ? { type:"up", diff:+diff.toFixed(1), unit:"kg" }
+                            : diff < 0 ? { type:"down", diff:+Math.abs(diff).toFixed(1), unit:"kg" }
+                            : { type:"same" };
                       }
                       return (
-                        <div key={idx} style={{
-                          display:"flex", justifyContent:"space-between", alignItems:"center",
-                          background:"var(--surface2)", borderRadius:8, padding:"6px 10px",
-                        }}>
-                          <span style={{ color:"var(--textFaint)", fontSize:11 }}>📅 {e.date}</span>
-                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ color:"var(--textMuted)", fontSize:12, fontWeight:600 }}>
-                              {e.sets}×{e.reps} · {e.weight}{e.unit}
-                            </span>
-                            <EvoBadge evo={evo} />
-                          </div>
+                        <div className="hist-line" key={idx}>
+                          <span className="mono dim">{e.date}</span>
+                          <span className="mono">
+                            {e.sets} × {e.reps} · {String(e.weight).replace(".", ",")} {unitLabel(e.unit)}
+                            <Evo evo={evo} />
+                          </span>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              );
-            })
-          )
+                );
+              })
+            )}
+          </>
         )}
       </div>
     </div>

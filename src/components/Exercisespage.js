@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { api } from "../api";
+import { Logo, SensitiveBadge, catPhoto, clean, plural } from "./Shell";
+import MuscleMap from "./MuscleMap";
 
 // ─── 40 EXERCICES HOMME ───────────────────────────────────────────────────────
 const EXERCISES_HOMME = [
@@ -168,34 +171,6 @@ const EXERCISES_FEMME = [
   { id:"f70", name:"Active stretching flow", cat:"Mobilit\u00e9", emoji:"\ud83c\udf0a", diff:"D\u00e9butant", calPerRep:0.09, muscles:["Souplesse", "Mobilit\u00e9", "R\u00e9cup\u00e9ration"], zones:["core", "legs"], benefits:["R\u00e9cup\u00e9ration active", "Souplesse durable", "Bien-\u00eatre"], desc:"Encha\u00eenement : pigeon, l\u00e9zard, \u00e9tirement hip flexor, fente lat\u00e9rale, torsion assise. Maintenez 30s chaque position. \ud83d\udca1 Les \u00e9tirements actifs (l\u00e9g\u00e8re contraction du muscle oppos\u00e9) sont plus efficaces que les \u00e9tirements passifs. \u26a0\ufe0f Ne forcez jamais jusqu'\u00e0 la douleur. La respiration profonde aide \u00e0 rel\u00e2cher." }
 ];
 
-// ─── BODY SVG ─────────────────────────────────────────────────────────────────
-function BodySVG({ zones = [], gender }) {
-  const primary = gender === "femme" ? "#ec4899" : "#f97316";
-  const a = (z) => zones.includes(z);
-  const c = (z) => a(z) ? primary : "#1e293b";
-  const o = (z) => a(z) ? 0.9 : 0.35;
-  return (
-    <svg viewBox="0 0 200 310" width="100%" height="100%">
-      <ellipse cx="100" cy="28" rx="20" ry="24" fill="#1e293b" opacity={0.5} />
-      <rect x="93" y="50" width="14" height="14" rx="4" fill="#1e293b" opacity={0.4} />
-      <ellipse cx="68"  cy="72" rx="18" ry="12" fill={c("shoulders")} opacity={o("shoulders")} />
-      <ellipse cx="132" cy="72" rx="18" ry="12" fill={c("shoulders")} opacity={o("shoulders")} />
-      <rect x="76"  y="78"  width="48" height="40" rx="8"  fill={c("chest")} opacity={o("chest")} />
-      <rect x="80"  y="118" width="40" height="36" rx="6"  fill={c("core")}  opacity={o("core")} />
-      <rect x="50"  y="78"  width="22" height="48" rx="10" fill={c("arms")}  opacity={o("arms")} />
-      <rect x="128" y="78"  width="22" height="48" rx="10" fill={c("arms")}  opacity={o("arms")} />
-      <rect x="48"  y="128" width="18" height="40" rx="8"  fill={c("arms")}  opacity={o("arms") * 0.7} />
-      <rect x="134" y="128" width="18" height="40" rx="8"  fill={c("arms")}  opacity={o("arms") * 0.7} />
-      <rect x="74"  y="154" width="52" height="20" rx="6"  fill="#1e293b"    opacity={0.45} />
-      <rect x="74"  y="172" width="24" height="64" rx="10" fill={c("legs")}  opacity={o("legs")} />
-      <rect x="102" y="172" width="24" height="64" rx="10" fill={c("legs")}  opacity={o("legs")} />
-      <rect x="76"  y="234" width="20" height="46" rx="8"  fill={c("legs")}  opacity={o("legs") * 0.7} />
-      <rect x="104" y="234" width="20" height="46" rx="8"  fill={c("legs")}  opacity={o("legs") * 0.7} />
-      {a("back") && <rect x="76" y="78" width="48" height="76" rx="8" fill={primary} opacity={0.65} />}
-    </svg>
-  );
-}
-
 // ─── IMAGE ENGINE : charge la DB complète 1 seule fois, puis recherche par nom ──
 const DB_URL   = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
 const IMG_BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
@@ -284,10 +259,10 @@ function findBestMatch(nameFR) {
 
 // Hook React : recherche l'image pour un exercice donné
 function useExerciseImage(exName) {
-  const [imgUrl, setImgUrl] = React.useState(null);
-  const [loaded, setLoaded] = React.useState(false);
+  const [imgUrl, setImgUrl] = useState(null);
+  const [loaded, setLoaded] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     loadDB().then(() => {
       if (cancelled) return;
@@ -303,237 +278,143 @@ function useExerciseImage(exName) {
   return { imgUrl, loaded };
 }
 
-// ─── EXERCISE CARD ────────────────────────────────────────────────────────────
-function ExCard({ ex, onAdd, gender }) {
-  const [open, setOpen] = React.useState(false);
-  const [imgErr, setImgErr] = React.useState(false);
-  const { imgUrl, loaded } = useExerciseImage(ex.name);
-  const diffClass = { Débutant: "diff-easy", Intermédiaire: "diff-medium", Avancé: "diff-hard" };
-  const hasImg = !!imgUrl && !imgErr;
+// ─── LIGNE D'EXERCICE (dépliable) ─────────────────────────────────────────────
+function ExCard({ ex, user, open, onToggle, onAdd }) {
+  const [imgErr, setImgErr] = useState(false);
+  const { imgUrl } = useExerciseImage(ex.name);
+  // Photo de l'exercice si elle existe, sinon photo de la catégorie
+  const src = imgUrl && !imgErr ? imgUrl : catPhoto(ex.cat);
 
   return (
-    <div className={`ex-card${open ? " open" : ""}`} onClick={() => setOpen(!open)}>
-      <div className="ex-head">
-
-        {/* Vignette */}
-        <div className="ex-thumb">
-          {hasImg ? (
-            <img
-              src={imgUrl}
-              alt={ex.name}
-              className="ex-thumb-img"
-              onError={() => setImgErr(true)}
-              loading="lazy"
-            />
-          ) : loaded ? (
-            <span style={{ fontSize: 26 }}>{ex.emoji}</span>
-          ) : (
-            <div className="ex-thumb-skeleton" />
-          )}
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="ex-name">{ex.name}</div>
-          <div className="ex-meta">{ex.cat} · 🔥 {ex.calPerRep} cal/rép</div>
-        </div>
-        <span className={`ex-badge ${diffClass[ex.diff] || "diff-easy"}`}>{ex.diff}</span>
-        <span className="ex-chevron">{open ? "▲" : "▼"}</span>
-      </div>
+    <>
+      <button type="button" className="row" aria-expanded={open} onClick={onToggle}>
+        <span className="th"><img className="ph" src={src} alt="" loading="lazy" onError={() => setImgErr(true)} /></span>
+        <span>
+          <b>{ex.name}</b>
+          <span className="mono dim">{ex.cat} · {ex.diff}</span>
+          <SensitiveBadge ex={ex} user={user} />
+        </span>
+        <span className={"sq" + (open ? " on" : "")} aria-hidden="true">{open ? "−" : "+"}</span>
+      </button>
 
       {open && (
-        <div className="ex-body" onClick={e => e.stopPropagation()}>
-
-          {/* Grande image */}
-          {hasImg && (
-            <div className="ex-big-img-wrap">
-              <img
-                src={imgUrl}
-                alt={ex.name}
-                className="ex-big-img"
-                onError={() => setImgErr(true)}
-                loading="lazy"
-              />
-              <div className="ex-big-img-overlay">
-                <span className="ex-big-img-name">{ex.name}</span>
-              </div>
+        <div className="ex-body">
+          <div className="ex-photo"><img className="ph" src={src} alt={ex.name} onError={() => setImgErr(true)} /></div>
+          <SensitiveBadge ex={ex} user={user} full />
+          <p className="ex-desc">{clean(ex.desc)}</p>
+          <MuscleMap ex={ex} />
+          <div className="ex-split">
+            <div>
+              <h4>Muscles ciblés</h4>
+              <ul>{ex.muscles.map((m) => <li key={m}>{m}</li>)}</ul>
             </div>
-          )}
-
-          <p className="ex-desc">{ex.desc}</p>
-          <div className="split-row">
-            <div style={{ flex: 1 }}>
-              <div className="sec-label">🎯 Muscles ciblés</div>
-              <div className="tag-row">
-                {ex.muscles.map(m => <span key={m} className="tag">{m}</span>)}
-              </div>
-              <div className="sec-label" style={{ marginTop: 10 }}>✨ Bienfaits</div>
-              {ex.benefits.map(b => <div key={b} className="benefit-txt">• {b}</div>)}
-              <div className="cal-chip">🔥 ~{ex.calPerRep} cal/rép</div>
-            </div>
-            <div className="svg-wrap">
-              <BodySVG zones={ex.zones} gender={gender} />
+            <div>
+              <h4>Bienfaits</h4>
+              <ul>{ex.benefits.map((b) => <li key={b}>{b}</li>)}</ul>
             </div>
           </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <button className="btn-outline-orange" onClick={() => onAdd(ex)}>
-              + Ajouter à une séance
-            </button>
-          </div>
+          <p className="mono dim" style={{ marginBottom: 14 }}>Environ {String(ex.calPerRep).replace(".", ",")} kcal par répétition</p>
+          <button type="button" className="btn" onClick={onAdd}>
+            <span>Ajouter à une séance</span><span aria-hidden="true">+</span>
+          </button>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-// ─── EXERCISES PAGE ───────────────────────────────────────────────────────────
-const seancesKey = (email) => `yassgym_seances_${email}`;
-
-function ExercisesPage({ user, gender, onAddToSeance, onBack }) {
+// ─── PAGE EXERCICES ───────────────────────────────────────────────────────────
+function ExercisesPage({ user, gender, onGoSeance }) {
   const [filter,   setFilter]   = useState("Tous");
   const [search,   setSearch]   = useState("");
   const [toast,    setToast]    = useState("");
-  const [pickerEx, setPickerEx] = useState(null);
+  const [openId,   setOpenId]   = useState(null);
+  const [pickerId, setPickerId] = useState(null);
+  const [seances,  setSeances]  = useState([]);
 
   const allExercises = gender === "femme" ? EXERCISES_FEMME : EXERCISES_HOMME;
-  const cats = ["Tous", ...new Set(allExercises.map(e => e.cat))];
+  const cats = ["Tous", ...new Set(allExercises.map((e) => e.cat))];
 
-  const filtered = allExercises.filter(e =>
+  const filtered = allExercises.filter((e) =>
     (filter === "Tous" || e.cat === filter) &&
     (search === "" || e.name.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const seances = user ? (JSON.parse(localStorage.getItem(`yassgym_seances_${user.email}`)) || []) : [];
+  useEffect(() => {
+    if (!user) return;
+    api.getSeances().then(setSeances).catch((err) => console.error(err));
+  }, [user]);
 
-  const handleAdd = (ex, seanceId) => {
-    if (!user) return setToast("⚠️ Connecte-toi pour ajouter des exercices !");
-    if (seanceId === null) {
-      onAddToSeance(ex);
-      setPickerEx(null);
-      setToast(`✅ "${ex.name}" ajouté à la séance rapide !`);
-    } else {
-      const allSeances = JSON.parse(localStorage.getItem(`yassgym_seances_${user.email}`)) || [];
-      const updated = allSeances.map(s => {
-        if (s.id !== seanceId) return s;
-        const already = (s.exercises||[]).find(it => it.ex.id === ex.id);
-        if (already) return s;
-        return { ...s, exercises: [...(s.exercises||[]), { ex, sets:"3", reps:"", weight:"" }] };
-      });
-      localStorage.setItem(`yassgym_seances_${user.email}`, JSON.stringify(updated));
-      const seance = allSeances.find(s => s.id === seanceId);
-      setPickerEx(null);
-      setToast(`✅ "${ex.name}" ajouté à "${seance?.nom}" !`);
+  const say = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
+
+  const addTo = async (ex, seance) => {
+    setPickerId(null);
+    if ((seance.exercises || []).find((it) => it.ex.id === ex.id)) {
+      return say(`${ex.name} est déjà dans « ${seance.nom} ».`);
     }
-    setTimeout(() => setToast(""), 2500);
+    try {
+      const saved = await api.updateSeance(seance.id, {
+        exercises: [...(seance.exercises || []), { ex, sets: "3", reps: "", weight: "" }],
+      });
+      setSeances((prev) => prev.map((s) => (s.id === saved.id ? saved : s)));
+      say(`${ex.name} ajouté à « ${seance.nom} ».`);
+    } catch (err) {
+      say(err.status ? err.message : "Serveur injoignable.");
+    }
   };
 
   return (
-    <div>
-      <div className="gy-header">
-        <div className="gy-logo">YASS<span style={{color:"var(--primary)"}}>-GYM</span><span className="gy-logo-dot"/></div>
-        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-          <span className="gy-gender-tag">
-            {gender === "femme" ? "🌸 Mode Femme" : "💪 Mode Homme"}
-          </span>
-          <button className="btn-ghost" onClick={onBack}>← Accueil</button>
-        </div>
-      </div>
+    <div className="screen with-tabs">
+      <header className="bar">
+        <Logo />
+        <span className="mono dim">{plural(allExercises.length, "exercice")}</span>
+      </header>
 
-      <div className="gy-content">
-        <h2 className="gy-page-title">
-          {gender === "femme" ? "🌸 Exercices Femme" : "💪 Exercices Homme"}
-        </h2>
-        <input className="gy-input" placeholder="🔍 Rechercher un exercice..."
-          value={search} onChange={e => setSearch(e.target.value)} />
-        <div className="filters">
-          {cats.map(c => (
-            <button key={c} className={`filter-btn${filter === c ? " active" : ""}`}
-              onClick={() => setFilter(c)}>{c}</button>
+      <div className="pad">
+        <h1 className="disp h1" style={{ margin: "6px 0 10px" }}>Exercices</h1>
+        <input className="search" type="search" placeholder="Rechercher un exercice" aria-label="Rechercher un exercice"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="chips" role="tablist" aria-label="Catégories">
+          {cats.map((c) => (
+            <button type="button" key={c} role="tab" aria-selected={filter === c}
+              className={filter === c ? "on" : ""} onClick={() => setFilter(c)}>{c === "Tous" ? "Tout" : c}</button>
           ))}
         </div>
-        <div style={{ color:"var(--textFaint)", fontSize:12, marginBottom:14 }}>
-          {filtered.length} exercice{filtered.length !== 1 ? "s" : ""}
-        </div>
+        <div className="mono count">{plural(filtered.length, "résultat")}</div>
 
-        {filtered.map(ex => (
+        {filtered.length === 0 && (
+          <div className="empty"><b className="disp">Rien trouvé</b>Essaie un autre mot ou une autre catégorie.</div>
+        )}
+
+        {filtered.map((ex) => (
           <div key={ex.id}>
-            <ExCard ex={ex} gender={gender} onAdd={(e) => setPickerEx(e)} />
+            <ExCard ex={ex} user={user} open={openId === ex.id}
+              onToggle={() => { setOpenId(openId === ex.id ? null : ex.id); setPickerId(null); }}
+              onAdd={() => setPickerId(ex.id)} />
 
-            {pickerEx?.id === ex.id && (
-              <div style={{
-                background:"var(--surface)", border:"1px solid var(--primaryBorder)",
-                borderRadius:14, padding:"16px 18px", marginTop:-6, marginBottom:10,
-                animation:"fadeIn .2s ease", boxShadow:"0 8px 30px var(--glow)",
-              }}>
-                <p style={{ color:"var(--textMuted)", fontSize:13, marginBottom:12, fontWeight:600 }}>
-                  Ajouter <strong style={{ color:"var(--primary)" }}>{ex.name}</strong> à :
-                </p>
-
-                {/* Séance rapide */}
-                <button onClick={() => handleAdd(ex, null)} style={{
-                  display:"flex", alignItems:"center", gap:12, width:"100%",
-                  background:"var(--surface2)", border:"1px solid var(--border2)",
-                  borderRadius:10, padding:"12px 16px", cursor:"pointer", marginBottom:8,
-                  transition:"all .15s", textAlign:"left",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor="var(--primaryBorder)"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor="var(--border2)"}
-                >
-                  <div style={{
-                    width:36, height:36, background:"var(--primaryBg)",
-                    border:"1px solid var(--primaryBorder)", borderRadius:10,
-                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0,
-                  }}>⚡</div>
-                  <div>
-                    <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, fontWeight:700, color:"var(--text)" }}>
-                      Séance rapide
-                    </div>
-                    <div style={{ color:"var(--textFaint)", fontSize:11 }}>Ajout immédiat sans programme</div>
-                  </div>
-                </button>
-
-                {seances.map(s => (
-                  <button key={s.id} onClick={() => handleAdd(ex, s.id)} style={{
-                    display:"flex", alignItems:"center", gap:12, width:"100%",
-                    background:"var(--surface2)", border:"1px solid var(--border2)",
-                    borderRadius:10, padding:"12px 16px", cursor:"pointer", marginBottom:8,
-                    transition:"all .15s", textAlign:"left",
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor="var(--primaryBorder)"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor="var(--border2)"}
-                  >
-                    <div style={{
-                      width:36, height:36, background:"var(--surface3)",
-                      border:"1px solid var(--border2)", borderRadius:10,
-                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0,
-                    }}>🏃</div>
-                    <div>
-                      <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, fontWeight:700, color:"var(--text)" }}>
-                        {s.nom}
-                      </div>
-                      <div style={{ color:"var(--textFaint)", fontSize:11 }}>
-                        📅 {s.jour} · {(s.exercises||[]).length} exercice{(s.exercises||[]).length!==1?"s":""}
-                      </div>
-                    </div>
+            {pickerId === ex.id && (
+              <div className="picker">
+                <div className="mono acc">Ajouter à quelle séance ?</div>
+                {seances.map((s) => (
+                  <button type="button" key={s.id} className="row no-th" onClick={() => addTo(ex, s)}>
+                    <span><b>{s.nom}</b><span className="mono dim">{s.jour} · {plural((s.exercises || []).length, "exercice")}</span></span>
+                    <span aria-hidden="true">+</span>
                   </button>
                 ))}
-
                 {seances.length === 0 && (
-                  <p style={{ color:"var(--textFaint)", fontSize:12, textAlign:"center", padding:"6px 0 8px" }}>
-                    Pas encore de séance créée
-                  </p>
+                  <button type="button" className="row no-th" onClick={() => onGoSeance(null)}>
+                    <span><b>Aucune séance pour l'instant</b><span className="mono dim">Créer ma première séance</span></span>
+                    <span aria-hidden="true">→</span>
+                  </button>
                 )}
-
-                <button onClick={() => setPickerEx(null)} style={{
-                  width:"100%", background:"none", border:"none",
-                  color:"var(--textFaint)", fontSize:12, cursor:"pointer", padding:"6px",
-                }}>✕ Annuler</button>
+                <button type="button" className="link dim" onClick={() => setPickerId(null)}>Annuler</button>
               </div>
             )}
           </div>
         ))}
       </div>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );
 }
