@@ -1,4 +1,5 @@
 import React from "react";
+import { exPhotos } from "../data/exercises";
 
 // ─── Éléments partagés par tous les écrans ───────────────────────────────────
 
@@ -115,17 +116,101 @@ export function HealthLogo({ size = 64 }) {
   );
 }
 
+// ─── Pictogrammes ────────────────────────────────────────────────────────────
+// Dessinés au trait, extrémités arrondies, dans l'esprit de l'haltère du logo
+const ICONS = {
+  accueil: <><path d="M3.5 11.2 12 4l8.5 7.2" /><path d="M5.8 9.8V20h12.4V9.8" /><path d="M10 20v-5.2h4V20" /></>,
+  exercises: <><path d="M7.2 12h9.6" /><rect x="3.8" y="6.8" width="3.4" height="10.4" rx="1.6" /><rect x="16.8" y="6.8" width="3.4" height="10.4" rx="1.6" /><path d="M1.6 10v4M22.4 10v4" /></>,
+  seance: <><rect x="3.8" y="5" width="16.4" height="15.2" rx="3.6" /><path d="M8 3v4M16 3v4" /><path d="m8.4 13.2 2.6 2.6 4.8-5.4" /></>,
+  history: <><path d="m3 16.5 5.4-5.4 3.8 3.2L20.5 6" /><path d="M15.2 6h5.3v5.3" /><path d="M3 20.5h18" /></>,
+  repas: <><path d="M6 3v6.2a2.5 2.5 0 0 0 5 0V3" /><path d="M8.5 3v18" /><path d="M17.5 21v-7.5h-3c0-4.4 1-8 3-10.5z" /></>,
+  plus: <path d="M12 5v14M5 12h14" />,
+  back: <path d="m14.5 5.5-6.5 6.5 6.5 6.5" />,
+  next: <path d="m9.5 5.5 6.5 6.5-6.5 6.5" />,
+  play: <path d="M8 5.200v13.600L18.8 12z" fill="currentColor" />,
+  pause: <path d="M8.5 5.500v13M15.5 5.500v13" />,
+  reset: <><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5" /><path d="M4.5 4.500v4.200h4.2" /></>,
+  sound: <><path d="M4 9.500v5h3.500l4.5 4v-13l-4.5 4z" /><path d="M15.5 9.200a4.2 4.2 0 0 1 0 5.600M18.2 6.500a7.8 7.8 0 0 1 0 11" /></>,
+  mute: <><path d="M4 9.500v5h3.500l4.5 4v-13l-4.5 4z" /><path d="m16 9.5 5 5M21 9.500l-5 5" /></>,
+  info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.500M12 7.600v.1" /></>,
+  check: <path d="m5.5 12.5 4.2 4.2 8.8-9.4" />,
+  close: <path d="m6.5 6.5 11 11M17.5 6.500l-11 11" />,
+  arrow: <path d="M4.5 12h15M13.5 6l6 6-6 6" />,
+  edit: <><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>,
+  user: <><circle cx="12" cy="8.2" r="3.7" /><path d="M4.8 20c.8-3.700 3.700-5.600 7.200-5.600s6.400 1.900 7.200 5.600" /></>,
+};
+
+export function Icon({ name, size = 24, stroke = 2 }) {
+  return (
+    <svg className="ic" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+// Bouton de retour : une pastille bien visible, avec un chevron
+export function Back({ label = "Retour", onClick }) {
+  return (
+    <button type="button" className="back" onClick={onClick}>
+      <Icon name="back" size={18} stroke={2.8} /><span>{label}</span>
+    </button>
+  );
+}
+
+// Bouton de fermeture : une croix dans un rond, qui pivote au survol
+export function Close({ onClick }) {
+  return (
+    <button type="button" className="close" aria-label="Fermer" title="Fermer" onClick={onClick}>
+      <Icon name="close" size={18} stroke={2.6} />
+    </button>
+  );
+}
+
+// Flèche d'un raccourci : un rond où la flèche sort à droite et revient par la gauche au survol
+export function Go() {
+  return (
+    <span className="go" aria-hidden="true">
+      <Icon name="arrow" size={18} stroke={2.4} /><Icon name="arrow" size={18} stroke={2.4} />
+    </span>
+  );
+}
+
+// Entrée vers la connexion : une pastille avec la silhouette du compte
+export function LoginPill({ onClick }) {
+  return (
+    <button type="button" className="login-pill" onClick={onClick}>
+      <span className="login-pill-ic"><Icon name="user" size={16} stroke={2.4} /></span>
+      <span>Connexion</span>
+      <Icon name="next" size={15} stroke={2.8} />
+    </button>
+  );
+}
+
+// Vignette d'un exercice : sa photo, ou l'haltère quand il n'en a pas encore
+export function ExThumb({ ex }) {
+  const [failed, setFailed] = React.useState(false);
+  const photos = exPhotos(ex);
+  return (
+    <span className="th">
+      {photos && !failed
+        ? <img className="ph" src={photos[0]} alt="" loading="lazy" onError={() => setFailed(true)} />
+        : <Icon name="exercises" size={26} stroke={1.6} />}
+    </span>
+  );
+}
+
 const TABS = [
-  ["accueil", "Accueil"], ["exercises", "Exercices"], ["seance", "Séances"], ["history", "Suivi"],
+  ["accueil", "Accueil"], ["exercises", "Exercices"], ["seance", "Séances"], ["repas", "Repas"], ["history", "Suivi"],
 ];
 
 export function TabBar({ page, onNav }) {
   return (
     <nav className="tabs" aria-label="Navigation principale">
       {TABS.map(([id, label]) => (
-        <button key={id} type="button" className={page === id ? "on" : ""}
+        <button key={id} type="button" className={page === id ? "on" : ""} aria-label={label} title={label}
           aria-current={page === id ? "page" : undefined} onClick={() => onNav(id)}>
-          {label}
+          <span><Icon name={id} /></span>
         </button>
       ))}
     </nav>

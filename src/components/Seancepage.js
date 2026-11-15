@@ -1,112 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 import { api } from "../api";
-import { Logo, SensitiveBadge, catPhoto, plural, unitLabel } from "./Shell";
+import { ls } from "../storage";
+import { Logo, SensitiveBadge, ExThumb, Icon, Back, Close, catPhoto, plural, unitLabel } from "./Shell";
+import { ExChips, ExSheet, filterEx } from "./ExParts";
+import RestTimer from "./RestTimer";
+import { catalogFor } from "../data/exercises";
+
+// Réglages du chrono de repos, gardés sur l'appareil et communs à tous les exercices
+const REST_KEY = "yassgym_rest";
+const MUTE_KEY = "yassgym_rest_mute";
 
 const JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const todayName = () => JOURS[(new Date().getDay() + 6) % 7];
 
-// ─── EXERCISES DATA (importée inline pour éviter les dépendances circulaires) ─
-const EXERCISES_HOMME = [
-  { id:"h1",  name:"Squat barre",           cat:"Jambes",    emoji:"🏋️", calPerRep:0.35, muscles:["Quadriceps","Fessiers"], zones:["legs"] },
-  { id:"h2",  name:"Soulevé de terre",       cat:"Dos",       emoji:"🏗️", calPerRep:0.45, muscles:["Dos","Fessiers"], zones:["back","legs"] },
-  { id:"h3",  name:"Développé couché",       cat:"Poitrine",  emoji:"💪", calPerRep:0.32, muscles:["Pectoraux","Triceps"], zones:["chest","arms"] },
-  { id:"h4",  name:"Traction pronation",     cat:"Dos",       emoji:"🔝", calPerRep:0.38, muscles:["Grand dorsal","Biceps"], zones:["back","arms"] },
-  { id:"h5",  name:"Développé militaire",    cat:"Épaules",   emoji:"🎯", calPerRep:0.30, muscles:["Deltoïdes","Triceps"], zones:["shoulders","arms"] },
-  { id:"h6",  name:"Squat avant",            cat:"Jambes",    emoji:"🦵", calPerRep:0.34, muscles:["Quadriceps","Core"], zones:["legs","core"] },
-  { id:"h7",  name:"Rowing barre",           cat:"Dos",       emoji:"🚣", calPerRep:0.28, muscles:["Grand dorsal","Biceps"], zones:["back","arms"] },
-  { id:"h8",  name:"Dips lestés",            cat:"Poitrine",  emoji:"⬇️", calPerRep:0.32, muscles:["Pectoraux","Triceps"], zones:["chest","arms"] },
-  { id:"h9",  name:"Curl barre",             cat:"Bras",      emoji:"💪", calPerRep:0.20, muscles:["Biceps"], zones:["arms"] },
-  { id:"h10", name:"Extension triceps",      cat:"Bras",      emoji:"📏", calPerRep:0.18, muscles:["Triceps"], zones:["arms"] },
-  { id:"h11", name:"Leg press",              cat:"Jambes",    emoji:"🦿", calPerRep:0.28, muscles:["Quadriceps","Fessiers"], zones:["legs"] },
-  { id:"h12", name:"Hack squat",             cat:"Jambes",    emoji:"⚙️", calPerRep:0.30, muscles:["Quadriceps"], zones:["legs"] },
-  { id:"h13", name:"Burpees",                cat:"Cardio",    emoji:"🔥", calPerRep:0.50, muscles:["Corps entier"], zones:["legs","chest","core"] },
-  { id:"h14", name:"Pompes diamant",         cat:"Bras",      emoji:"💎", calPerRep:0.25, muscles:["Triceps","Pectoraux"], zones:["arms","chest"] },
-  { id:"h15", name:"Arnold press",           cat:"Épaules",   emoji:"🌀", calPerRep:0.26, muscles:["Deltoïdes"], zones:["shoulders","arms"] },
-  { id:"h16", name:"Face pull",              cat:"Épaules",   emoji:"🎗️", calPerRep:0.16, muscles:["Deltoïdes post."], zones:["shoulders","back"] },
-  { id:"h17", name:"Planche",                cat:"Abdos",     emoji:"⚡", calPerRep:0.15, muscles:["Core"], zones:["core"] },
-  { id:"h18", name:"Crunch câble",           cat:"Abdos",     emoji:"🔄", calPerRep:0.14, muscles:["Abdominaux"], zones:["core"] },
-  { id:"h19", name:"Box jump",               cat:"Cardio",    emoji:"📦", calPerRep:0.42, muscles:["Quadriceps","Fessiers"], zones:["legs"] },
-  { id:"h20", name:"Kettlebell swing",       cat:"Cardio",    emoji:"🔔", calPerRep:0.28, muscles:["Fessiers","Core"], zones:["legs","core"] },
-  { id:"h21", name:"Rowing haltère",         cat:"Dos",       emoji:"🚣", calPerRep:0.27, muscles:["Grand dorsal"], zones:["back","arms"] },
-  { id:"h22", name:"Leg curl",               cat:"Jambes",    emoji:"🦵", calPerRep:0.22, muscles:["Ischio-jambiers"], zones:["legs"] },
-  { id:"h23", name:"Extension quadriceps",   cat:"Jambes",    emoji:"🦿", calPerRep:0.20, muscles:["Quadriceps"], zones:["legs"] },
-  { id:"h24", name:"Shrugs haltères",        cat:"Épaules",   emoji:"🤷", calPerRep:0.18, muscles:["Trapèze"], zones:["shoulders"] },
-  { id:"h25", name:"Dumbbell fly",           cat:"Poitrine",  emoji:"🦅", calPerRep:0.24, muscles:["Pectoraux"], zones:["chest"] },
-  { id:"h26", name:"Corde à sauter",         cat:"Cardio",    emoji:"🪢", calPerRep:0.12, muscles:["Mollets"], zones:["legs"] },
-  { id:"h27", name:"Hollow body",            cat:"Abdos",     emoji:"🛸", calPerRep:0.20, muscles:["Core"], zones:["core"] },
-  { id:"h28", name:"Leg raise suspendu",     cat:"Abdos",     emoji:"🔼", calPerRep:0.22, muscles:["Abdominaux bas"], zones:["core"] },
-  { id:"h29", name:"Incliné développé",      cat:"Poitrine",  emoji:"📐", calPerRep:0.30, muscles:["Pectoraux sup."], zones:["chest","arms"] },
-  { id:"h30", name:"Decline développé",      cat:"Poitrine",  emoji:"📉", calPerRep:0.30, muscles:["Pectoraux inf."], zones:["chest","arms"] },
-  { id:"h31", name:"Bulgarian squat",        cat:"Jambes",    emoji:"🇧🇬", calPerRep:0.32, muscles:["Quadriceps","Fessiers"], zones:["legs"] },
-  { id:"h32", name:"Good morning",           cat:"Dos",       emoji:"🌅", calPerRep:0.25, muscles:["Ischio-jambiers","Dos"], zones:["back","legs"] },
-  { id:"h33", name:"Dips triceps banc",      cat:"Bras",      emoji:"🪑", calPerRep:0.22, muscles:["Triceps"], zones:["arms"] },
-  { id:"h34", name:"Curl concentré",         cat:"Bras",      emoji:"🎯", calPerRep:0.17, muscles:["Biceps"], zones:["arms"] },
-  { id:"h35", name:"Mountain climbers",      cat:"Cardio",    emoji:"🧗", calPerRep:0.22, muscles:["Core","Jambes"], zones:["core","legs"] },
-  { id:"h36", name:"Tirage vertical",        cat:"Dos",       emoji:"⬇️", calPerRep:0.25, muscles:["Grand dorsal"], zones:["back","arms"] },
-  { id:"h37", name:"Peck deck",              cat:"Poitrine",  emoji:"🦁", calPerRep:0.20, muscles:["Pectoraux"], zones:["chest"] },
-  { id:"h38", name:"Élévations latérales",   cat:"Épaules",   emoji:"✈️", calPerRep:0.16, muscles:["Deltoïdes lat."], zones:["shoulders"] },
-  { id:"h39", name:"Sprint intervalles",     cat:"Cardio",    emoji:"🏃", calPerRep:0.60, muscles:["Jambes","Core"], zones:["legs","core"] },
-  { id:"h40", name:"Farmer walk",            cat:"Cardio",    emoji:"👨‍🌾", calPerRep:0.35, muscles:["Avant-bras","Core"], zones:["back","legs","core"] },
-];
-
-const EXERCISES_FEMME = [
-  { id:"f1",  name:"Hip thrust",             cat:"Fessiers",  emoji:"🍑", calPerRep:0.28, muscles:["Fessiers"], zones:["legs"] },
-  { id:"f2",  name:"Squat sumo",             cat:"Jambes",    emoji:"🦵", calPerRep:0.28, muscles:["Fessiers","Quadriceps"], zones:["legs"] },
-  { id:"f3",  name:"Fente arrière",          cat:"Jambes",    emoji:"🚶", calPerRep:0.24, muscles:["Fessiers","Quadriceps"], zones:["legs"] },
-  { id:"f4",  name:"Donkey kicks",           cat:"Fessiers",  emoji:"🦵", calPerRep:0.16, muscles:["Fessiers"], zones:["legs"] },
-  { id:"f5",  name:"Abduction élastique",    cat:"Fessiers",  emoji:"🔴", calPerRep:0.14, muscles:["Fessiers moyens"], zones:["legs"] },
-  { id:"f6",  name:"Glute bridge",           cat:"Fessiers",  emoji:"🌉", calPerRep:0.18, muscles:["Fessiers","Core"], zones:["legs","core"] },
-  { id:"f7",  name:"Step-up",                cat:"Jambes",    emoji:"🪜", calPerRep:0.22, muscles:["Fessiers","Quadriceps"], zones:["legs"] },
-  { id:"f8",  name:"Squat gobelet",          cat:"Jambes",    emoji:"🏆", calPerRep:0.26, muscles:["Quadriceps","Core"], zones:["legs","core"] },
-  { id:"f9",  name:"Pompes genoux",          cat:"Poitrine",  emoji:"💪", calPerRep:0.20, muscles:["Pectoraux","Triceps"], zones:["chest","arms"] },
-  { id:"f10", name:"Triceps banc",           cat:"Bras",      emoji:"🪑", calPerRep:0.18, muscles:["Triceps"], zones:["arms"] },
-  { id:"f11", name:"Curl haltères",          cat:"Bras",      emoji:"💪", calPerRep:0.16, muscles:["Biceps"], zones:["arms"] },
-  { id:"f12", name:"Planche",                cat:"Abdos",     emoji:"⚡", calPerRep:0.15, muscles:["Core"], zones:["core"] },
-  { id:"f13", name:"Crunch basique",         cat:"Abdos",     emoji:"🔄", calPerRep:0.12, muscles:["Abdominaux"], zones:["core"] },
-  { id:"f14", name:"Bicycle crunch",         cat:"Abdos",     emoji:"🚴", calPerRep:0.16, muscles:["Obliques"], zones:["core"] },
-  { id:"f15", name:"Mountain climbers",      cat:"Cardio",    emoji:"🧗", calPerRep:0.22, muscles:["Core","Jambes"], zones:["core","legs"] },
-  { id:"f16", name:"Jump rope",              cat:"Cardio",    emoji:"🪢", calPerRep:0.12, muscles:["Mollets"], zones:["legs"] },
-  { id:"f17", name:"Burpees modifiés",       cat:"Cardio",    emoji:"🔥", calPerRep:0.38, muscles:["Corps entier"], zones:["legs","chest","core"] },
-  { id:"f18", name:"Zumba squats",           cat:"Cardio",    emoji:"💃", calPerRep:0.20, muscles:["Jambes","Fessiers"], zones:["legs"] },
-  { id:"f19", name:"Side lunge",             cat:"Jambes",    emoji:"↔️", calPerRep:0.22, muscles:["Adducteurs","Fessiers"], zones:["legs"] },
-  { id:"f20", name:"Sumo deadlift",          cat:"Fessiers",  emoji:"🏋️", calPerRep:0.35, muscles:["Fessiers","Ischio-jambiers"], zones:["legs","back"] },
-  { id:"f21", name:"Romanian deadlift",      cat:"Fessiers",  emoji:"🌹", calPerRep:0.32, muscles:["Ischio-jambiers","Fessiers"], zones:["legs","back"] },
-  { id:"f22", name:"Élévation jambe côté",   cat:"Fessiers",  emoji:"🦵", calPerRep:0.14, muscles:["Fessiers moyens"], zones:["legs"] },
-  { id:"f23", name:"Squat pulse",            cat:"Jambes",    emoji:"🔛", calPerRep:0.16, muscles:["Quadriceps","Fessiers"], zones:["legs"] },
-  { id:"f24", name:"Fente marchée",          cat:"Jambes",    emoji:"🚶", calPerRep:0.26, muscles:["Fessiers","Quadriceps"], zones:["legs"] },
-  { id:"f25", name:"Wall sit",               cat:"Jambes",    emoji:"🧱", calPerRep:0.18, muscles:["Quadriceps"], zones:["legs","core"] },
-  { id:"f26", name:"Rowing élastique",       cat:"Dos",       emoji:"🎗️", calPerRep:0.18, muscles:["Grand dorsal"], zones:["back","arms"] },
-  { id:"f27", name:"Superman",               cat:"Dos",       emoji:"🦸", calPerRep:0.14, muscles:["Érecteurs","Fessiers"], zones:["back"] },
-  { id:"f28", name:"Bird dog",               cat:"Abdos",     emoji:"🐦", calPerRep:0.13, muscles:["Core"], zones:["core","back"] },
-  { id:"f29", name:"Dead bug",               cat:"Abdos",     emoji:"🐞", calPerRep:0.16, muscles:["Core profond"], zones:["core"] },
-  { id:"f30", name:"Pilates 100",            cat:"Abdos",     emoji:"💆", calPerRep:0.14, muscles:["Core"], zones:["core"] },
-  { id:"f31", name:"Clamshell",              cat:"Fessiers",  emoji:"🐚", calPerRep:0.13, muscles:["Fessiers moyens"], zones:["legs"] },
-  { id:"f32", name:"Hip circle",             cat:"Fessiers",  emoji:"⭕", calPerRep:0.15, muscles:["Fessiers","Hanches"], zones:["legs","core"] },
-  { id:"f33", name:"Kick-boxing cardio",     cat:"Cardio",    emoji:"🥊", calPerRep:0.40, muscles:["Corps entier"], zones:["legs","arms","core"] },
-  { id:"f34", name:"Jumping jacks",          cat:"Cardio",    emoji:"⭐", calPerRep:0.10, muscles:["Cardio"], zones:["legs"] },
-  { id:"f35", name:"High knees",             cat:"Cardio",    emoji:"🦵", calPerRep:0.18, muscles:["Hip flexors"], zones:["legs","core"] },
-  { id:"f36", name:"Triceps overhead",       cat:"Bras",      emoji:"☝️", calPerRep:0.16, muscles:["Triceps"], zones:["arms"] },
-  { id:"f37", name:"Curl marteau",           cat:"Bras",      emoji:"🔨", calPerRep:0.16, muscles:["Biceps brachial"], zones:["arms"] },
-  { id:"f38", name:"Yoga flow",              cat:"Mobilité",  emoji:"🧘", calPerRep:0.10, muscles:["Flexibilité"], zones:["core"] },
-  { id:"f39", name:"Stretching fessiers",    cat:"Mobilité",  emoji:"🌸", calPerRep:0.08, muscles:["Fessiers"], zones:["legs"] },
-  { id:"f40", name:"Foam roller jambes",     cat:"Mobilité",  emoji:"🟤", calPerRep:0.08, muscles:["Fascias"], zones:["legs"] },
-];
-
 const kcal = (n) => String(n).replace(".", ",");
 
 // ─── FENÊTRE : CHOISIR DES EXERCICES ──────────────────────────────────────────
-function ExercisePickerModal({ gender, user, alreadyAdded, onAdd, onClose }) {
+// Un appui ajoute l'exercice, un second le retire
+function ExercisePickerModal({ gender, user, alreadyAdded, onAdd, onRemove, onClose }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Tous");
 
-  const allEx = gender === "femme" ? EXERCISES_FEMME : EXERCISES_HOMME;
-  const cats  = ["Tous", ...new Set(allEx.map(e => e.cat))];
   const addedIds = alreadyAdded.map(it => it.ex.id);
-
-  const filtered = allEx.filter(e =>
-    (filter === "Tous" || e.cat === filter) &&
-    (search === "" || e.name.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = filterEx(catalogFor(gender), filter, search, user);
 
   return (
     <div className="sheet-bg top" onClick={onClose}>
@@ -114,28 +30,22 @@ function ExercisePickerModal({ gender, user, alreadyAdded, onAdd, onClose }) {
         <div className="sheet-head">
           <div className="sec" style={{ margin: 0 }}>
             <h3 className="disp">Ajouter</h3>
-            <button type="button" className="link" onClick={onClose}>Fermer</button>
+            <Close onClick={onClose} />
           </div>
-          <input className="search" type="search" placeholder="Rechercher un exercice" aria-label="Rechercher un exercice"
-            value={search} onChange={e => setSearch(e.target.value)} autoFocus />
-          <div className="chips">
-            {cats.map(c => (
-              <button type="button" key={c} className={filter === c ? "on" : ""} onClick={() => setFilter(c)}>
-                {c === "Tous" ? "Tout" : c}
-              </button>
-            ))}
-          </div>
+          <input className="search" type="search" placeholder="Exercice, muscle ou matériel" aria-label="Rechercher un exercice"
+            value={search} onChange={e => setSearch(e.target.value)} />
+          <ExChips user={user} value={filter} onChange={setFilter} />
         </div>
 
         <div className="sheet-scroll">
           {filtered.map(ex => {
             const isAdded = addedIds.includes(ex.id);
             return (
-              <button type="button" key={ex.id} className="row" disabled={isAdded}
-                onClick={() => onAdd(ex)} aria-label={isAdded ? `${ex.name}, déjà ajouté` : `Ajouter ${ex.name}`}>
-                <span className="th"><img className="ph" src={catPhoto(ex.cat)} alt="" loading="lazy" /></span>
+              <button type="button" key={ex.id} className={"row" + (isAdded ? " sel" : "")} aria-pressed={isAdded}
+                onClick={() => (isAdded ? onRemove(ex.id) : onAdd(ex))} aria-label={isAdded ? `Retirer ${ex.name}` : `Ajouter ${ex.name}`}>
+                <ExThumb ex={ex} />
                 <span><b>{ex.name}</b><span className="mono dim">{ex.cat} · {kcal(ex.calPerRep)} kcal / rép.</span><SensitiveBadge ex={ex} user={user} /></span>
-                <span className={"sq" + (isAdded ? " on" : "")} aria-hidden="true">{isAdded ? "✓" : "+"}</span>
+                <span className={"sq" + (isAdded ? " on" : "")} aria-hidden="true">{isAdded ? <Icon name="check" size={18} stroke={3} /> : "+"}</span>
               </button>
             );
           })}
@@ -205,7 +115,7 @@ function SeanceModal({ seance, gender, user, onSave, onClose }) {
               <div className="empty" style={{ marginTop: 6 }}>Aucun exercice. Tu pourras aussi en ajouter plus tard.</div>
             ) : exercises.map(it => (
               <div className="row" key={it.ex.id}>
-                <span className="th"><img className="ph" src={catPhoto(it.ex.cat)} alt="" /></span>
+                <ExThumb ex={it.ex} />
                 <span><b>{it.ex.name}</b><span className="mono dim">{it.ex.cat}</span><SensitiveBadge ex={it.ex} user={user} /></span>
                 <button type="button" className="link dim" onClick={() => removeExercise(it.ex.id)}
                   aria-label={`Retirer ${it.ex.name}`}>Retirer</button>
@@ -224,7 +134,7 @@ function SeanceModal({ seance, gender, user, onSave, onClose }) {
 
       {showPicker && (
         <ExercisePickerModal gender={gender} user={user} alreadyAdded={exercises}
-          onAdd={addExercise} onClose={() => setShowPicker(false)} />
+          onAdd={addExercise} onRemove={removeExercise} onClose={() => setShowPicker(false)} />
       )}
     </>
   );
@@ -236,7 +146,13 @@ function SeanceDetail({ seance, user, gender, onBack, onUpdate }) {
   const [toast,      setToast]      = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [saving,     setSaving]     = useState(false);
+  const [infoEx,     setInfoEx]     = useState(null);                              // fiche d'exercice ouverte
+  const [rest,       setRest]       = useState(() => ls.get(REST_KEY) || 90);      // durée du repos, en secondes
+  const [muted,      setMuted]      = useState(() => ls.get(MUTE_KEY) === true);
   const items = seance.exercises || [];
+
+  const changeRest = (s) => { setRest(s); ls.set(REST_KEY, s); };
+  const changeMute = (m) => { setMuted(m); ls.set(MUTE_KEY, m); };
 
   const showToast = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
 
@@ -246,6 +162,7 @@ function SeanceDetail({ seance, user, gender, onBack, onUpdate }) {
     updateItems(items.map((it, i) => i === idx ? { ...it, [field]: val } : it));
 
   const remove = (idx) => updateItems(items.filter((_, i) => i !== idx));
+  const removeById = (id) => updateItems(items.filter((it) => it.ex.id !== id));
 
   const addExercise = (ex) => {
     if (items.find(it => it.ex.id === ex.id)) return;
@@ -291,7 +208,7 @@ function SeanceDetail({ seance, user, gender, onBack, onUpdate }) {
       <div className="cover">
         <img className="ph" src={catPhoto(items[0]?.ex.cat)} alt="" />
         <header className="bar">
-          <button type="button" className="link" onClick={onBack}>← Séances</button>
+          <Back label="Séances" onClick={onBack} />
           <div className="unit" role="group" aria-label="Unité de poids">
             {["kg","lbs"].map(u => (
               <button type="button" key={u} className={unit === u ? "on" : ""} aria-pressed={unit === u}
@@ -320,7 +237,11 @@ function SeanceDetail({ seance, user, gender, onBack, onUpdate }) {
                 <div className="block-head">
                   <div>
                     <span className="mono dim">{String(idx + 1).padStart(2, "0")} · {it.ex.cat}</span>
-                    <span className="title" style={{ fontSize: 21, marginTop: 2 }}>{it.ex.name}</span>
+                    <button type="button" className="ex-open" onClick={() => setInfoEx(it.ex)}
+                      aria-label={`Voir comment faire : ${it.ex.name}`}>
+                      <ExThumb ex={it.ex} />
+                      <span><span className="title" style={{ fontSize: 21 }}>{it.ex.name}</span><span className="ex-how"><Icon name="info" size={15} stroke={2.2} />Comment le faire</span></span>
+                    </button>
                     <SensitiveBadge ex={it.ex} user={user} />
                   </div>
                   <button type="button" className="link dim" onClick={() => remove(idx)}
@@ -344,6 +265,7 @@ function SeanceDetail({ seance, user, gender, onBack, onUpdate }) {
                   </div>
                 </div>
                 <div className="mono dim" style={{ marginTop: 8, textAlign: "right" }}>≈ {calcCal(it)} kcal</div>
+                <RestTimer sets={parseInt(it.sets) || 1} total={rest} onTotal={changeRest} muted={muted} onMute={changeMute} />
               </div>
             ))}
 
@@ -362,8 +284,9 @@ function SeanceDetail({ seance, user, gender, onBack, onUpdate }) {
 
       {showPicker && (
         <ExercisePickerModal gender={gender} user={user} alreadyAdded={items}
-          onAdd={addExercise} onClose={() => setShowPicker(false)} />
+          onAdd={addExercise} onRemove={removeById} onClose={() => setShowPicker(false)} />
       )}
+      {infoEx && <ExSheet ex={infoEx} user={user} onClose={() => setInfoEx(null)} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );

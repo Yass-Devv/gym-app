@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { api } from "../api";
-import { Avatar, HealthLogo, Mark, SENSITIVE_AREAS, fromKg, unitLabel } from "./Shell";
+import { Avatar, HealthLogo, Mark, SENSITIVE_AREAS, fromKg, unitLabel, Back } from "./Shell";
 
 const APP_VERSION = "1.0.0";
 const fr = (n) => String(n).replace(".", ",");
@@ -145,7 +145,7 @@ function Settings({ user, theme, onTheme, onUser, onBack, onEditProfile, onLogou
     return (
       <div className="screen">
         <header className="bar">
-          <button type="button" className="link" onClick={() => setDoc(null)}>← Réglages</button>
+          <Back label="Réglages" onClick={() => setDoc(null)} />
         </header>
         <div className="pad legal">
           <h1 className="disp h1">{d.title}</h1>
@@ -167,7 +167,7 @@ function Settings({ user, theme, onTheme, onUser, onBack, onEditProfile, onLogou
   return (
     <div className="screen">
       <header className="bar">
-        <button type="button" className="link" onClick={onBack}>← Retour</button>
+        <Back onClick={onBack} />
         <span className="mono dim">Profil et réglages</span>
       </header>
 

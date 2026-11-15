@@ -20,7 +20,8 @@ const publicUser = (u) => ({
   sensitiveZones: u.sensitive_zones || [],
   unit:        u.unit || "kg",
   avatar:      u.avatar || null,
-  onboarded:   Boolean(u.onboarded_at),
+  goals:       u.goals || {},
+  onboarded:  Boolean(u.onboarded_at),
 });
 
 // Valeurs acceptées pour le profil (doivent correspondre à src/components/Onboarding.js)
@@ -31,7 +32,12 @@ const LEVELS     = ["debutant", "intermediaire", "avance"];
 const SENSITIVE  = ["cou", "epaules", "coudes", "poignets", "dos", "lombaires", "hanches", "genoux", "chevilles"];
 const MAX_AVATAR = 200000; // caractères (≈ 150 Ko d'image)
 
+// Objectifs choisis à la main (doivent correspondre à GOAL_FIELDS dans src/goals.js). Un objectif absent reste calculé.
+const GOAL_LIMITS = { kcal: [800, 6000], protein: [20, 400], carbs: [20, 900], fat: [10, 300], burn: [200, 30000] };
+
 const intBetween = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+const validGoals = (v) => v !== null && typeof v === "object" && !Array.isArray(v)
+  && Object.entries(v).every(([k, n]) => GOAL_LIMITS[k] && intBetween(n, ...GOAL_LIMITS[k]));
 
 // Chaque champ : colonne SQL + validation. Seuls les champs envoyés sont modifiés.
 const PROFILE_FIELDS = {
@@ -46,6 +52,7 @@ const PROFILE_FIELDS = {
   healthOptin: { col: "health_optin",  ok: (v) => typeof v === "boolean" },
   sensitiveZones: { col: "sensitive_zones", ok: (v) => Array.isArray(v) && v.length <= SENSITIVE.length && v.every((z) => SENSITIVE.includes(z)), toSql: JSON.stringify },
   unit:        { col: "unit",          ok: (v) => ["kg", "lbs"].includes(v) },
+  goals:       { col: "goals",         ok: validGoals, toSql: JSON.stringify },
   // null = retirer la photo
   avatar:      { col: "avatar",        ok: (v) => v === null || (typeof v === "string" && v.length <= MAX_AVATAR && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v)) },
 };

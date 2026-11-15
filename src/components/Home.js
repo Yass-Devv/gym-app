@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import { Logo, Mark, Avatar, photo, catPhoto, plural } from "./Shell";
+import { Logo, Mark, Avatar, Icon, LoginPill, Go, photo, catPhoto, plural } from "./Shell";
 
 const JOURS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 const WEEK  = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -16,7 +16,7 @@ function Landing({ onLoginClick }) {
       <div className="shade" />
       <header className="bar">
         <Logo />
-        <button type="button" className="link" onClick={onLoginClick}>Connexion</button>
+        <LoginPill onClick={onLoginClick} />
       </header>
       <div className="hero-bottom">
         <Mark size={56} />
@@ -90,7 +90,7 @@ function Dashboard({ user, onGoExercises, onGoSeance, onGoHistory, onGoSettings 
         ) : (
           <button type="button" className="today" onClick={() => onGoSeance(null)}>
             <img className="ph" src={photo("halteres-rack")} alt="" />
-            <span className="today-go mono">Créer →</span>
+            <span className="today-plus" aria-label="Créer une séance"><Icon name="plus" size={30} stroke={3.4} /></span>
             <span className="today-txt">
               <span className="mono acc">{JOURS[now.getDay()]}</span>
               <span className="disp" style={{ display: "block" }}>Aucune séance prévue</span>
@@ -113,15 +113,15 @@ function Dashboard({ user, onGoExercises, onGoSeance, onGoHistory, onGoSettings 
         </div>
 
         <div className="sec"><span className="mono dim">Raccourcis</span></div>
-        <button type="button" className="row" onClick={onGoExercises}>
+        <button type="button" className="row short" onClick={onGoExercises}>
           <span className="th"><img className="ph" src={photo("haltere-main")} alt="" /></span>
           <span><b>Catalogue d'exercices</b><span className="mono dim">Chercher, lire, ajouter</span></span>
-          <span aria-hidden="true">→</span>
+          <Go />
         </button>
-        <button type="button" className="row" onClick={onGoHistory}>
+        <button type="button" className="row short" onClick={onGoHistory}>
           <span className="th"><img className="ph" src={photo("coureurs")} alt="" /></span>
           <span><b>Ma progression</b><span className="mono dim">Charges, calories, régularité</span></span>
-          <span aria-hidden="true">→</span>
+          <Go />
         </button>
 
       </div>

@@ -47,4 +47,10 @@ export const api = {
   getHistory:  ()        => request("/workouts"),
   saveWorkout: (workout) => request("/workouts", { method: "POST", body: workout }),
   getStats:    ()        => request("/workouts/stats"),
+
+  // Repas
+  searchFoods: (q)    => request(`/meals/search?q=${encodeURIComponent(q)}`),
+  getMeals:   (date)  => request(`/meals?date=${date}`),
+  addMeal:    (entry) => request("/meals", { method: "POST", body: entry }),
+  deleteMeal: (id)    => request(`/meals/${id}`, { method: "DELETE" }),
 };

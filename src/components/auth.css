@@ -9,7 +9,7 @@
 .lg-photo .bar { position: absolute; inset: 0 0 auto 0; z-index: 1; }
 .lg-form { padding: 0 20px calc(28px + env(safe-area-inset-bottom)); animation: rise .35s ease-out; }
 .lg-title { font-size: 48px; margin: -44px 0 20px; position: relative; }
-.lg-show { color: var(--os); font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 0; }
+.lg-show { color: var(--os); font: 700 11.5px var(--label); letter-spacing: .035em; text-transform: uppercase; padding: 0; }
 .lg-strength { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; color: var(--gris); }
 .lg-strength-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; flex: 1; }
 .lg-strength-bars i { height: 3px; background: var(--trait); }
@@ -42,15 +42,26 @@
 .ob-tile.on .ph { filter: grayscale(0) contrast(1.05); }
 .ob-tile.on::before { content: ""; position: absolute; top: 9px; right: 9px; width: 13px; height: 13px; background: var(--acc); z-index: 1; }
 
-/* Choix en liste numérotée (objectif, niveau) */
-.ob-opt { display: grid; grid-template-columns: 34px 1fr 16px; gap: 6px; align-items: center; width: 100%; text-align: left; border-top: 1px solid var(--trait); padding: 15px 0; }
-.ob-opt:last-of-type { border-bottom: 1px solid var(--trait); }
-.ob-opt .mono { color: var(--gris); }
-.ob-opt b { display: block; font-stretch: 75%; font-weight: 700; font-size: 19px; text-transform: uppercase; line-height: 1.1; }
-.ob-opt small { display: block; color: var(--gris); font-size: 13px; margin-top: 3px; }
-.ob-opt i { width: 13px; height: 13px; border: 1px solid var(--trait2); }
-.ob-opt.on b, .ob-opt.on .mono { color: var(--acc); }
-.ob-opt.on i { background: var(--acc); border-color: var(--acc); }
+/* Cartes photo à choix unique (objectif, niveau) */
+.ob-cards { display: grid; gap: 10px; }
+.ob-card { position: relative; display: flex; align-items: flex-end; width: 100%; min-height: 104px; overflow: hidden; text-align: left; border-radius: 20px; background: var(--carbone); color: var(--on-photo); transition: transform .12s; }
+.ob-card:active { transform: scale(.985); }
+.ob-card .ph { position: absolute; inset: 0; transition: filter .25s; }
+.ob-card::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(0,0,0,.86) 0%, rgba(0,0,0,.62) 52%, rgba(0,0,0,.18) 100%); }
+.ob-card::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; border: 2px solid transparent; transition: border-color .15s; pointer-events: none; }
+.ob-card-txt { position: relative; z-index: 2; padding: 16px 64px 16px 18px; }
+.ob-card b { display: block; font-stretch: 80%; font-weight: 800; font-size: 22px; line-height: 1.1; letter-spacing: .005em; }
+.ob-card small { display: block; font-size: 14.5px; line-height: 1.35; margin-top: 4px; color: #e2ddd3; }
+.ob-check { position: absolute; z-index: 2; top: 50%; right: 16px; width: 32px; height: 32px; margin-top: -16px; border-radius: 50%; display: grid; place-items: center; border: 2px solid rgba(236,232,223,.55); color: transparent; transition: background .15s, border-color .15s, color .15s; }
+.ob-card.on::after { border-color: var(--acc); }
+.ob-card.on .ph { filter: grayscale(0) contrast(1.05); }
+.ob-card.on .ob-check { background: var(--acc); border-color: var(--acc); color: #0b0b0b; }
+.ob-gauge { display: flex; align-items: flex-end; gap: 3px; height: 16px; margin-bottom: 8px; }
+.ob-gauge i { width: 5px; border-radius: 2px; background: rgba(236,232,223,.3); }
+.ob-gauge i:nth-child(1) { height: 7px; }
+.ob-gauge i:nth-child(2) { height: 11px; }
+.ob-gauge i:nth-child(3) { height: 16px; }
+.ob-gauge i.on { background: var(--acc); }
 .ob-h2 { display: block; color: var(--gris); margin: 26px 0 0; }
 
 /* Sélecteur de nombre */
@@ -79,7 +90,7 @@
 /* Récapitulatif */
 .ob-recap .kpis b span { font-size: .4em; color: var(--gris); margin-left: 3px; }
 .ob-recap dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--trait); }
-.ob-recap dt { color: var(--gris); font: 500 11px/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.ob-recap dt { color: var(--gris); font: 700 12.5px/1.9 var(--label); letter-spacing: .035em; text-transform: uppercase; }
 .ob-recap dd { font-weight: 600; text-align: right; }
 
 @media (max-width: 350px) {

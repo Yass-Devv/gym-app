@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { api } from "../api";
-import { photo, HealthLogo, SENSITIVE_AREAS, LB, unitLabel } from "./Shell";
+import { photo, Icon, Back, Close, HealthLogo, SENSITIVE_AREAS, LB, unitLabel } from "./Shell";
 import "./auth.css";
 
 // Les identifiants doivent correspondre à server/src/routes/auth.js
@@ -18,16 +18,16 @@ const ACTIVITIES = [
 ];
 
 const GOALS = [
-  { id: "perte-poids",  label: "Perdre du poids",     desc: "Brûler des calories, s'affiner" },
-  { id: "prise-muscle", label: "Prendre du muscle",   desc: "Force et masse musculaire" },
-  { id: "forme",        label: "Rester en forme",     desc: "Bouger régulièrement, se sentir bien" },
-  { id: "endurance",    label: "Gagner en endurance", desc: "Souffle, cardio, résistance" },
+  { id: "perte-poids",  label: "Perdre du poids",     desc: "Brûler des calories, s'affiner",       img: "cardio" },
+  { id: "prise-muscle", label: "Prendre du muscle",   desc: "Force et masse musculaire",            img: "curl" },
+  { id: "forme",        label: "Rester en forme",     desc: "Bouger régulièrement, se sentir bien", img: "yoga" },
+  { id: "endurance",    label: "Gagner en endurance", desc: "Souffle, cardio, résistance",          img: "coureurs" },
 ];
 
 const LEVELS = [
-  { id: "debutant",      label: "Débutant",      desc: "Je commence ou je reprends" },
-  { id: "intermediaire", label: "Intermédiaire", desc: "Je m'entraîne régulièrement" },
-  { id: "avance",        label: "Avancé",        desc: "Plusieurs années de pratique" },
+  { id: "debutant",      label: "Débutant",      desc: "Je commence ou je reprends",   img: "haltere-main" },
+  { id: "intermediaire", label: "Intermédiaire", desc: "Je m'entraîne régulièrement",  img: "halteres-rack" },
+  { id: "avance",        label: "Avancé",        desc: "Plusieurs années de pratique", img: "barre-nb" },
 ];
 
 const STEPS = ["gender", "age", "height", "weight", "activities", "goal", "level", "zones", "health", "recap"];
@@ -57,16 +57,28 @@ function NumberPicker({ value, onChange, min, max, step = 1, unit }) {
   );
 }
 
-// Liste numérotée à choix unique
-function Options({ items, value, onPick }) {
-  return items.map((it, i) => (
-    <button type="button" key={it.id} className={"ob-opt" + (value === it.id ? " on" : "")}
-      aria-pressed={value === it.id} onClick={() => onPick(it.id)}>
-      <span className="mono">{two(i + 1)}</span>
-      <span><b>{it.label}</b><small>{it.desc}</small></span>
-      <i aria-hidden="true" />
-    </button>
-  ));
+// Cartes photo à choix unique. Avec « gauge », une jauge de 1 à n barres indique l'intensité (niveau).
+function Options({ items, value, onPick, gauge = false }) {
+  return (
+    <div className="ob-cards">
+      {items.map((it, i) => (
+        <button type="button" key={it.id} className={"ob-card" + (value === it.id ? " on" : "")}
+          aria-pressed={value === it.id} onClick={() => onPick(it.id)}>
+          <img className="ph" src={photo(it.img)} alt="" />
+          <span className="ob-card-txt">
+            {gauge && (
+              <span className="ob-gauge" aria-hidden="true">
+                {items.map((x, j) => <i key={x.id} className={j <= i ? "on" : ""} />)}
+              </span>
+            )}
+            <b>{it.label}</b>
+            <small>{it.desc}</small>
+          </span>
+          <span className="ob-check" aria-hidden="true"><Icon name="check" size={18} stroke={3} /></span>
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function Onboarding({ user, onDone, onLogout, onClose }) {
@@ -144,9 +156,9 @@ function Onboarding({ user, onDone, onLogout, onClose }) {
     <div className="screen ob-screen">
       <header className="bar">
         {step > 0
-          ? <button type="button" className="link" onClick={back}>← Retour</button>
+          ? <Back onClick={back} />
           : onClose
-            ? <button type="button" className="link" onClick={onClose}>← Fermer</button>
+            ? <Close onClick={onClose} />
             : <span className="mono dim">Ton profil</span>}
         <span className="mono dim">{two(step + 1)} / {two(STEPS.length)}</span>
       </header>
@@ -231,7 +243,7 @@ function Onboarding({ user, onDone, onLogout, onClose }) {
           <>
             <h1 className="disp h1">Ton niveau ?</h1>
             <p className="ob-sub">Sois honnête, personne ne regarde.</p>
-            <Options items={LEVELS} value={p.level} onPick={(level) => upd({ level })} />
+            <Options items={LEVELS} value={p.level} onPick={(level) => upd({ level })} gauge />
             <span className="mono ob-h2">Séances par semaine</span>
             <div className="days">
               {[1, 2, 3, 4, 5, 6, 7].map((d) => (

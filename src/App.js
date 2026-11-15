@@ -9,6 +9,7 @@ import Onboarding    from "./components/Onboarding";
 import ExercisesPage from "./components/Exercisespage";
 import SeancePage    from "./components/Seancepage";
 import HistoryPage   from "./components/Historypage";
+import MealsPage     from "./components/Mealspage";
 import Settings      from "./components/Settings";
 import { TabBar }    from "./components/Shell";
 
@@ -16,7 +17,7 @@ import { TabBar }    from "./components/Shell";
 const cachedUser = () => (getToken() ? ls.get(SESSION_KEY) : null);
 
 // Écrans accessibles depuis la barre d'onglets
-const TAB_PAGES = ["accueil", "exercises", "seance", "history"];
+const TAB_PAGES = ["accueil", "exercises", "seance", "repas", "history"];
 
 // Apparence : préférence de l'appareil, gardée en local
 const THEME_KEY = "yassgym_theme";
@@ -100,7 +101,8 @@ function App() {
       {current === "seance" && (
         <SeancePage user={user} gender={gender} openId={openSeanceId} onOpened={() => setOpenSeanceId(null)} />
       )}
-      {current === "history" && <HistoryPage user={user} />}
+      {current === "repas" && <MealsPage user={user} onUser={saveUser} />}
+      {current === "history" && <HistoryPage user={user} onUser={saveUser} />}
 
       {user && TAB_PAGES.includes(current) && (
         <TabBar page={current} onNav={(p) => (p === "seance" ? goSeance(null) : go(p))} />

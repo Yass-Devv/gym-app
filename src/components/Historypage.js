@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../api";
-import { Logo, plural, fromKg, unitLabel } from "./Shell";
+import { Logo, Icon, plural, fromKg, unitLabel } from "./Shell";
+import { GoalsSheet } from "./Goals";
+import { goalsFor } from "../goals";
 
 const toKg = (w, unit) => (unit === "lbs" ? w * 0.453592 : w);
 const nf   = (n) => Math.round(n).toLocaleString("fr-FR");
@@ -39,7 +41,8 @@ function Evo({ evo }) {
 }
 
 // ─── PAGE SUIVI ───────────────────────────────────────────────────────────────
-function HistoryPage({ user }) {
+function HistoryPage({ user, onUser }) {
+  const [editGoal, setEditGoal] = useState(false);
   const [tab, setTab]         = useState("seances"); // "seances" | "progres"
   const [hist,    setHist]    = useState([]);
   const [stats,   setStats]   = useState({ totalCal:0, totalSessions:0, streak:0 });
@@ -71,7 +74,8 @@ function HistoryPage({ user }) {
   });
   const maxCal = Math.max(...last7.map(d => d.cal), 1);
 
-  const GOAL = 2000;
+  // Objectif de dépense du mois : calculé d'après le profil, ou choisi à la main
+  const GOAL = goalsFor(user).burn;
   const pct  = Math.min(100, Math.round((monthCals / GOAL) * 100));
 
   // Progression par exercice : toutes les occurrences avec un poids
@@ -118,7 +122,15 @@ function HistoryPage({ user }) {
             </div>
 
             <div className="goal">
-              <div className="goal-top mono"><span>Objectif du mois</span><span>{nf(monthCals)} / {nf(GOAL)} kcal</span></div>
+              <div className="goal-top mono">
+                <span>Objectif du mois</span>
+                <span className="goal-val">
+                  {nf(monthCals)} / {nf(GOAL)} kcal
+                  <button type="button" className="edit-pill" onClick={() => setEditGoal(true)}>
+                    <Icon name="edit" size={14} stroke={2.4} /><span>Modifier</span>
+                  </button>
+                </span>
+              </div>
               <div className="goal-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
                 <i style={{ width: pct + "%" }} />
               </div>
@@ -217,6 +229,8 @@ function HistoryPage({ user }) {
           </>
         )}
       </div>
+
+      {editGoal && <GoalsSheet user={user} keys={["burn"]} onUser={onUser} onClose={() => setEditGoal(false)} />}
     </div>
   );
 }

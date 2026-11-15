@@ -4,6 +4,7 @@ import { pool } from "./db/pool.js";
 import authRoutes    from "./routes/auth.js";
 import seanceRoutes  from "./routes/seances.js";
 import workoutRoutes from "./routes/workouts.js";
+import mealRoutes    from "./routes/meals.js";
 
 if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET manquant dans server/.env");
 
@@ -24,6 +25,7 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api/auth",     authRoutes);
 app.use("/api/seances",  seanceRoutes);
 app.use("/api/workouts", workoutRoutes);
+app.use("/api/meals",    mealRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: "Route introuvable" }));
 

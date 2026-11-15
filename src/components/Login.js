@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { api, setToken } from "../api";
-import { Logo, photo } from "./Shell";
+import { Logo, Close, photo } from "./Shell";
 import "./auth.css";
 
 const MIN_PASSWORD = 6;
@@ -77,7 +77,7 @@ function Login({ onLogin, onCancel }) {
         <img className="ph" src={photo(isLogin ? "barre-nb" : "rack")} alt="" />
         <header className="bar">
           <Logo />
-          {onCancel && <button type="button" className="link" onClick={onCancel}>Fermer</button>}
+          {onCancel && <Close onClick={onCancel} />}
         </header>
       </div>
 
