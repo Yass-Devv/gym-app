@@ -5,6 +5,7 @@ services:
     name: yass-gym-api
     runtime: node
     rootDir: server
+    region: frankfurt     # même région que la base Neon (AWS Europe Central, Frankfurt)
     plan: free            # gratuit : se met en veille après 15 min sans visite. "starter" = toujours allumé (payant)
     buildCommand: npm ci
     startCommand: npm start   # crée/met à jour les tables puis lance l'API
