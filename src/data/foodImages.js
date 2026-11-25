@@ -273,6 +273,9 @@ const PATHS = {
   "Boisson protéinée (shake)": "commons/thumb/3/3f/Scitec_Nutrition_Wall_of_Protein_at_FIBO_2013.jpg/330px-Scitec_Nutrition_Wall_of_Protein_at_FIBO_2013.jpg",
   "Lait chocolaté": "commons/thumb/7/7d/New_chocolate_milk.JPG/330px-New_chocolate_milk.JPG",
   "Eau": "commons/thumb/a/ad/Clean_water_for_a_village_in_West_Lombok_%2810686572086%29.jpg/330px-Clean_water_for_a_village_in_West_Lombok_%2810686572086%29.jpg",
+  "Pâtes complètes cuites": "commons/thumb/b/b1/Pasta_6.jpg/330px-Pasta_6.jpg",
+  "Panini": "commons/thumb/c/c9/Panini_sandwich_in_a_restaurant.JPG/330px-Panini_sandwich_in_a_restaurant.JPG",
+  "Rouleaux de printemps": "commons/thumb/3/3b/G%E1%BB%8Fi_cu%E1%BB%91n_at_a_Vietnamese-style_restaurant_in_Beijing_%2820180103175625%29.jpg/330px-G%E1%BB%8Fi_cu%E1%BB%91n_at_a_Vietnamese-style_restaurant_in_Beijing_%2820180103175625%29.jpg",
 };
 
 export const FOOD_IMG = Object.fromEntries(Object.entries(PATHS).map(([name, path]) => [name, path.startsWith("http") ? path : BASE + path]));

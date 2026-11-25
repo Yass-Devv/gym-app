@@ -1,6 +1,46 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { Avatar, HealthLogo, Mark, SENSITIVE_AREAS, fromKg, unitLabel, Back } from "./Shell";
+import BodyZones from "./BodyZones";
+import { Avatar, StepsLogo, Mark, fromKg, unitLabel, Back } from "./Shell";
+import { pedometerStatus, enablePedometer, disablePedometer, syncSteps, pedometerDeniedHelp } from "../steps";
+
+// ─── Podomètre du téléphone ──────────────────────────────────────────────────
+function PedometerRow() {
+  const [st, setSt]     = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState("");
+  useEffect(() => { pedometerStatus().then(setSt); }, []);
+
+  const toggle = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      if (st.enabled) setSt(await disablePedometer());
+      else { setSt(await enablePedometer()); syncSteps().catch(() => {}); }
+    } catch (e) {
+      setErr(e?.code === "DENIED"
+        ? pedometerDeniedHelp()
+        : e?.message || "Impossible d'activer le podomètre.");
+    }
+    setBusy(false);
+  };
+
+  const sub = !st ? "…"
+    : !st.available ? "Disponible dans l'appli Android et iPhone"
+    : st.enabled ? "Tes pas sont comptés, trajets en véhicule exclus"
+    : "Compte tes pas avec le capteur du téléphone";
+  return (
+    <>
+      <button type="button" className="row" style={{ gridTemplateColumns: "44px 1fr auto" }}
+        disabled={busy || !st?.available} aria-pressed={!!st?.enabled} onClick={toggle}>
+        <StepsLogo size={44} />
+        <span><b>Podomètre</b><span className="mono dim">{sub}</span></span>
+        <span className={"tag" + (st?.enabled ? " on" : "")}>{st?.enabled ? "Activé" : st?.available ? "Activer" : "Appli"}</span>
+      </button>
+      {err && <div className="alert" role="alert">{err}</div>}
+    </>
+  );
+}
 
 const APP_VERSION = "1.0.0";
 const fr = (n) => String(n).replace(".", ",");
@@ -200,18 +240,8 @@ function Settings({ user, theme, onTheme, onUser, onBack, onEditProfile, onLogou
 
         {/* ── Zones sensibles ── */}
         <span className="lbl">Zones sensibles</span>
-        <p className="hint">Touche une zone pour l'ajouter ou l'enlever. Les exercices qui la sollicitent seront signalés.</p>
-        <div className="pills">
-          {SENSITIVE_AREAS.map((a) => {
-            const on = zones.includes(a.id);
-            return (
-              <button type="button" key={a.id} className={on ? "on" : ""} aria-pressed={on}
-                disabled={saving} onClick={() => toggleZone(a.id)}>
-                {a.label}<span aria-hidden="true">{on ? " ×" : " +"}</span>
-              </button>
-            );
-          })}
-        </div>
+        <p className="hint">Touche une zone sur le corps pour l'ajouter ou l'enlever. Les exercices qui la sollicitent seront signalés.</p>
+        <BodyZones value={zones} onToggle={toggleZone} disabled={saving} gender={user.gender} />
 
         {/* ── Préférences ── */}
         <span className="lbl">Unité de poids</span>
@@ -231,12 +261,7 @@ function Settings({ user, theme, onTheme, onUser, onBack, onEditProfile, onLogou
         </div>
 
         <span className="lbl">Connexions</span>
-        <button type="button" className="row" style={{ gridTemplateColumns: "44px 1fr auto" }} disabled={saving}
-          aria-pressed={user.healthOptin} onClick={() => save({ healthOptin: !user.healthOptin })}>
-          <HealthLogo size={44} />
-          <span><b>Apple Santé</b><span className="mono dim">Disponible avec l'app iPhone</span></span>
-          <span className={"tag" + (user.healthOptin ? " on" : "")}>{user.healthOptin ? "Me prévenir" : "Non"}</span>
-        </button>
+        <PedometerRow />
 
         {/* ── À propos ── */}
         <span className="lbl">À propos</span>

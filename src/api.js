@@ -53,4 +53,16 @@ export const api = {
   getMeals:   (date)  => request(`/meals?date=${date}`),
   addMeal:    (entry) => request("/meals", { method: "POST", body: entry }),
   deleteMeal: (id)    => request(`/meals/${id}`, { method: "DELETE" }),
+  getMealSummary: (from, to) => request(`/meals/summary?from=${from}&to=${to}`),
+
+  // Pas (podomètre)
+  getSteps:  (from, to) => request(`/steps?from=${from}&to=${to}`),
+  saveSteps: (days)     => request("/steps", { method: "PUT", body: { days } }),
+
+  // Défis
+  getChallenges:   ()                => request("/challenges"),
+  startChallenge:  (c)               => request("/challenges", { method: "POST", body: c }),
+  logChallenge:    (id, date, value) => request(`/challenges/${id}`, { method: "PATCH", body: { date, value } }),
+  endChallenge:    (id, status)      => request(`/challenges/${id}`, { method: "PATCH", body: { status } }),
+  deleteChallenge: (id)              => request(`/challenges/${id}`, { method: "DELETE" }),
 };

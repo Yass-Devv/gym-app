@@ -31,16 +31,18 @@ function Landing({ onLoginClick }) {
 }
 
 // ─── Tableau de bord ─────────────────────────────────────────────────────────
-function Dashboard({ user, onGoExercises, onGoSeance, onGoHistory, onGoSettings }) {
+function Dashboard({ user, onGoExercises, onGoSeance, onGoHistory, onGoSettings, onGoChallenges }) {
   const [seances, setSeances] = useState([]);
   const [hist, setHist]       = useState([]);
   const [stats, setStats]     = useState({ totalCal: 0, totalSessions: 0, streak: 0 });
   const [error, setError]     = useState("");
+  const [running, setRunning] = useState(0); // défis en cours
 
   useEffect(() => {
     Promise.all([api.getSeances(), api.getHistory(), api.getStats()])
       .then(([s, h, st]) => { setSeances(s); setHist(h); setStats(st); })
       .catch((err) => setError(err.status ? err.message : "Serveur injoignable."));
+    api.getChallenges().then((rows) => setRunning(rows.filter((c) => c.status === "active").length)).catch(() => {});
   }, []);
 
   const now      = new Date();
@@ -121,6 +123,11 @@ function Dashboard({ user, onGoExercises, onGoSeance, onGoHistory, onGoSettings 
         <button type="button" className="row short" onClick={onGoHistory}>
           <span className="th"><img className="ph" src={photo("coureurs")} alt="" /></span>
           <span><b>Ma progression</b><span className="mono dim">Charges, calories, régularité</span></span>
+          <Go />
+        </button>
+        <button type="button" className="row short" onClick={onGoChallenges}>
+          <span className="th"><img className="ph" src={photo("crossfit")} alt="" /></span>
+          <span><b>Défis</b><span className="mono dim">{running > 0 ? `${plural(running, "défi")} en cours` : "Zéro sucre, course, prise de masse"}</span></span>
           <Go />
         </button>
 

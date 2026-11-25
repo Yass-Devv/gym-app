@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { query } from "../db/pool.js";
 import { requireAuth } from "../middleware/auth.js";
+import { validExercises } from "./seances.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -31,15 +32,21 @@ router.post("/", async (req, res) => {
   if (!Array.isArray(exercises) || exercises.length === 0) {
     return res.status(400).json({ error: "Ajoute des exercices d'abord !" });
   }
+  if (!validExercises(exercises)) return res.status(400).json({ error: "Liste d'exercices invalide." });
+  if (seanceName !== null && (typeof seanceName !== "string" || seanceName.length > 100)) {
+    return res.status(400).json({ error: "Nom de séance invalide." });
+  }
+  const cal = Number(totalCal);
+  if (!Number.isFinite(cal) || cal < 0 || cal > 100000) return res.status(400).json({ error: "Calories invalides." });
   const { rows } = await query(
     `INSERT INTO workouts (user_id, seance_name, exercises, total_cal)
      VALUES ($1, $2, $3, $4) RETURNING id`,
-    [req.user.id, seanceName, JSON.stringify(exercises), Math.round(Number(totalCal) || 0)]
+    [req.user.id, seanceName, JSON.stringify(exercises), Math.round(cal)]
   );
   res.status(201).json({ id: rows[0].id });
 });
 
-// GET /api/workouts/stats — { totalCal, totalSessions, streak }
+// GET /api/workouts/stats — { totalCal, totalSessions, streak, stepsKcal }
 router.get("/stats", async (req, res) => {
   const { rows: [totals] } = await query(
     `SELECT COALESCE(SUM(total_cal), 0)::int AS "totalCal", COUNT(*)::int AS "totalSessions"
@@ -68,7 +75,12 @@ router.get("/stats", async (req, res) => {
     [req.user.id]
   );
 
-  res.json({ ...totals, streak });
+  // Calories des pas (podomètre), comptées à part
+  const { rows: [{ stepsKcal }] } = await query(
+    'SELECT COALESCE(SUM(kcal), 0)::int AS "stepsKcal" FROM steps WHERE user_id = $1', [req.user.id]
+  );
+
+  res.json({ ...totals, streak, stepsKcal });
 });
 
 export default router;

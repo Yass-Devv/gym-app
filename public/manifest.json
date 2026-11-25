@@ -1,20 +1,29 @@
 {
+  "id": "/",
   "short_name": "YASS-GYM",
-  "name": "YASS-GYM",
+  "name": "YASS-GYM — Carnet d'entraînement",
+  "description": "Crée tes séances de musculation, découvre plus de 500 exercices illustrés, suis tes repas et ta progression.",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["health", "fitness", "sports"],
   "icons": [
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     }
   ],
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#0b0b0b",
   "background_color": "#0b0b0b"
 }

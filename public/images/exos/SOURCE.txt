@@ -1,0 +1,4 @@
+Images créées par IA (Canva) pour YASS-GYM, pour les exercices sans photo libre disponible.
+Nom du fichier = identifiant de l'exercice (voir src/data/exercisePics.js).
+Ce sont des aperçus en 200 px : les originaux en haute définition sont dans le compte Canva (dossier Importations).
+Pour améliorer la qualité, télécharge l'original depuis Canva et remplace le fichier en gardant le même nom.

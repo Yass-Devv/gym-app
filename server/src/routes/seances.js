@@ -1,11 +1,20 @@
 import { Router } from "express";
 import { query } from "../db/pool.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, validId } from "../middleware/auth.js";
 
 const router = Router();
 router.use(requireAuth);
 
 const COLS = "id, nom, jour, exercises";
+const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const MAX_SEANCES = 100; // par compte
+
+const validNom  = (v) => typeof v === "string" && v.trim().length > 0 && v.trim().length <= 100;
+const validJour = (v) => JOURS.includes(v);
+// Liste d'exercices : tableau d'objets, de taille raisonnable
+export const validExercises = (v) => Array.isArray(v) && v.length <= 100
+  && v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e))
+  && JSON.stringify(v).length <= 200000;
 
 // GET /api/seances
 router.get("/", async (req, res) => {
@@ -16,7 +25,11 @@ router.get("/", async (req, res) => {
 // POST /api/seances  { nom, jour, exercises }
 router.post("/", async (req, res) => {
   const { nom, jour = "Lundi", exercises = [] } = req.body ?? {};
-  if (!nom?.trim()) return res.status(400).json({ error: "Le nom est requis." });
+  if (!validNom(nom))              return res.status(400).json({ error: "Le nom est requis (100 caractères maximum)." });
+  if (!validJour(jour))            return res.status(400).json({ error: "Jour invalide." });
+  if (!validExercises(exercises))  return res.status(400).json({ error: "Liste d'exercices invalide." });
+  const { rows: [{ n }] } = await query("SELECT COUNT(*)::int AS n FROM seances WHERE user_id = $1", [req.user.id]);
+  if (n >= MAX_SEANCES) return res.status(400).json({ error: "Nombre maximum de séances atteint." });
   const { rows } = await query(
     `INSERT INTO seances (user_id, nom, jour, exercises) VALUES ($1, $2, $3, $4) RETURNING ${COLS}`,
     [req.user.id, nom.trim(), jour, JSON.stringify(exercises)]
@@ -27,6 +40,10 @@ router.post("/", async (req, res) => {
 // PUT /api/seances/:id  { nom?, jour?, exercises? }
 router.put("/:id", async (req, res) => {
   const { nom, jour, exercises } = req.body ?? {};
+  if (!validId(req.params.id)) return res.status(404).json({ error: "Séance introuvable" });
+  if (nom != null && !validNom(nom))                    return res.status(400).json({ error: "Nom invalide (100 caractères maximum)." });
+  if (jour != null && !validJour(jour))                 return res.status(400).json({ error: "Jour invalide." });
+  if (exercises != null && !validExercises(exercises))  return res.status(400).json({ error: "Liste d'exercices invalide." });
   const { rows } = await query(
     `UPDATE seances SET
        nom        = COALESCE($1, nom),
@@ -43,6 +60,7 @@ router.put("/:id", async (req, res) => {
 
 // DELETE /api/seances/:id
 router.delete("/:id", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(404).json({ error: "Séance introuvable" });
   const { rowCount } = await query(
     "DELETE FROM seances WHERE id = $1 AND user_id = $2",
     [req.params.id, req.user.id]

@@ -116,6 +116,21 @@ export function HealthLogo({ size = 64 }) {
   );
 }
 
+// Pictogramme « Podomètre » : deux empreintes de pas sur une tuile orange
+export function StepsLogo({ size = 64 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Podomètre">
+      <rect width="64" height="64" rx="15" fill="var(--acc)" />
+      <g fill="#0b0b0b">
+        <ellipse cx="24" cy="25" rx="6.2" ry="9.5" transform="rotate(-8 24 25)" />
+        <ellipse cx="25.5" cy="40" rx="4.6" ry="3.6" transform="rotate(-8 25.5 40)" />
+        <ellipse cx="40" cy="31" rx="6.2" ry="9.5" transform="rotate(8 40 31)" />
+        <ellipse cx="38.5" cy="46" rx="4.6" ry="3.6" transform="rotate(8 38.5 46)" />
+      </g>
+    </svg>
+  );
+}
+
 // ─── Pictogrammes ────────────────────────────────────────────────────────────
 // Dessinés au trait, extrémités arrondies, dans l'esprit de l'haltère du logo
 const ICONS = {

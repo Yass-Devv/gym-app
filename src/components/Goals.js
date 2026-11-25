@@ -5,9 +5,9 @@ import { GOAL_FIELDS, autoGoals, goalsFor, goalHint } from "../goals";
 
 // ─── Fenêtre : modifier ses objectifs ────────────────────────────────────────
 // keys : objectifs proposés dans cette fenêtre (voir GOAL_FIELDS)
-export function GoalsSheet({ user, keys, onUser, onClose }) {
-  const auto = autoGoals(user);
-  const [vals, setVals]     = useState(() => { const g = goalsFor(user); return Object.fromEntries(keys.map((k) => [k, String(g[k])])); });
+export function GoalsSheet({ user, keys, onUser, onClose, opts }) {
+  const auto = autoGoals(user, opts);
+  const [vals, setVals]     = useState(() => { const g = goalsFor(user, opts); return Object.fromEntries(keys.map((k) => [k, String(g[k])])); });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
 

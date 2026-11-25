@@ -2,39 +2,96 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <%
+      /* Adresse publique du site (ex. https://www.mon-domaine.fr), donnée par REACT_APP_SITE_URL au moment du build.
+         Elle sert aux balises qui exigent une adresse complète : canonical, og:url, og:image. */
+      var SITE = (process.env.REACT_APP_SITE_URL || "").replace(/\/+$/, "");
+      var TITLE = "YASS-GYM — Carnet d'entraînement : séances, exercices et repas";
+      var DESC = "YASS-GYM, ton carnet d'entraînement gratuit : crée tes séances de musculation, découvre plus de 500 exercices illustrés, suis tes repas, tes calories et ta progression.";
+    %>
+    <title><%= TITLE %></title>
+    <meta name="description" content="<%= DESC %>" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#0b0b0b" />
-    <meta
-      name="description"
-      content="YASS-GYM, ton carnet d'entraînement : séances, exercices et progression."
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. Se§
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+    <meta name="application-name" content="YASS-GYM" />
+    <meta name="apple-mobile-web-app-title" content="YASS-GYM" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <% if (SITE) { %><link rel="canonical" href="<%= SITE %>/" /><% } %>
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>YASS-GYM</title>
+    <% if (process.env.NODE_ENV === "production") { %>
+    <!-- Politique de sécurité du contenu : seuls les scripts de l'appli s'exécutent (protège le jeton de session
+         contre l'injection de script). Uniquement en production : l'outil de développement a besoin de scripts en ligne. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' http: https:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <% } %>
+
+    <!-- Partage sur les réseaux sociaux et messageries -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="YASS-GYM" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="<%= TITLE %>" />
+    <meta property="og:description" content="<%= DESC %>" />
+    <% if (SITE) { %><meta property="og:url" content="<%= SITE %>/" /><% } %>
+    <meta property="og:image" content="<%= SITE %>%PUBLIC_URL%/images/partage.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Sportif de dos en salle de musculation — YASS-GYM" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<%= TITLE %>" />
+    <meta name="twitter:description" content="<%= DESC %>" />
+    <meta name="twitter:image" content="<%= SITE %>%PUBLIC_URL%/images/partage.jpg" />
+
+    <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Polices et photos : connexions ouvertes en avance pour un affichage plus rapide -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://raw.githubusercontent.com" />
+    <link rel="dns-prefetch" href="https://thumb.wikimedia.org" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,800..900&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap"
+    />
+
+    <!-- Données structurées : décrit l'appli aux moteurs de recherche -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "YASS-GYM",
+        "description": "<%= DESC %>",
+        <% if (SITE) { %>"url": "<%= SITE %>/",
+        "image": "<%= SITE %>/images/partage.jpg",<% } %>
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Web, Android",
+        "inLanguage": "fr",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "featureList": [
+          "Séances de musculation personnalisées",
+          "Plus de 500 exercices illustrés",
+          "Suivi des repas et des calories",
+          "Minuteur de repos",
+          "Historique et progression"
+        ]
+      }
+    </script>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <h1>YASS-GYM — ton carnet d'entraînement</h1>
+      <p>
+        Crée tes séances, découvre plus de 500 exercices illustrés, suis tes repas et ta progression.
+        Active JavaScript dans ton navigateur pour utiliser l'application.
+      </p>
+    </noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
   </body>
 </html>

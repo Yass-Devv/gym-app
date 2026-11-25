@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { query } from "../db/pool.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, validId } from "../middleware/auth.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -25,6 +25,18 @@ router.get("/", async (req, res) => {
     [req.user.id, req.query.date]
   );
   res.json(rows.map(toJson));
+});
+
+// GET /api/meals/summary?from=2026-11-01&to=2026-11-30 — totaux par jour (sert aux défis de nutrition)
+router.get("/summary", async (req, res) => {
+  const { from, to } = req.query;
+  if (!isDate(from) || !isDate(to)) return res.status(400).json({ error: "Dates invalides." });
+  const { rows } = await query(
+    `SELECT to_char(eaten_on, 'YYYY-MM-DD') AS day, SUM(kcal)::int AS kcal, SUM(protein)::float AS protein
+     FROM meals WHERE user_id = $1 AND eaten_on BETWEEN $2 AND $3 GROUP BY eaten_on ORDER BY eaten_on`,
+    [req.user.id, from, to]
+  );
+  res.json(rows);
 });
 
 // GET /api/meals/search?q=yaourt — produits du commerce (Open Food Facts, base libre), valeurs pour 100 g.
@@ -77,6 +89,7 @@ router.post("/", async (req, res) => {
 
 // DELETE /api/meals/:id
 router.delete("/:id", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(404).json({ error: "Aliment introuvable" });
   const { rowCount } = await query(
     "DELETE FROM meals WHERE id = $1 AND user_id = $2",
     [req.params.id, req.user.id]

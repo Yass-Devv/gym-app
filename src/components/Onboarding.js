@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import { photo, Icon, Back, Close, HealthLogo, SENSITIVE_AREAS, LB, unitLabel } from "./Shell";
+import { photo, Icon, Back, Close, StepsLogo, SENSITIVE_AREAS, LB, unitLabel } from "./Shell";
+import { pedometerStatus, enablePedometer, pedometerPermissionName } from "../steps";
+import BodyZones from "./BodyZones";
 import "./auth.css";
 
 // Les identifiants doivent correspondre à server/src/routes/auth.js
@@ -81,7 +83,42 @@ function Options({ items, value, onPick, gauge = false }) {
   );
 }
 
+// ─── Étape podomètre ─────────────────────────────────────────────────────────
+function PedometerStep({ pedo, onPedo }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState("");
+  const turnOn = async () => {
+    setBusy(true);
+    setErr("");
+    try { onPedo(await enablePedometer()); }
+    catch (e) { setErr(e?.code === "DENIED" ? "Autorisation refusée. Tu pourras l'activer plus tard dans les réglages." : e?.message || "Impossible d'activer le podomètre."); }
+    setBusy(false);
+  };
+  return (
+    <>
+      <StepsLogo size={72} />
+      <h1 className="disp h1" style={{ marginTop: 18 }}>Tes pas,<br />comptés.</h1>
+      <p className="ob-sub">
+        Le capteur de ton téléphone compte tes pas toute la journée, même appli fermée. Les calories
+        qu'ils brûlent s'ajoutent à ton suivi. Les trajets en voiture, bus, train ou avion sont écartés.
+      </p>
+      {pedo?.available ? (
+        <button type="button" className={"ob-toggle" + (pedo.enabled ? " on" : "")} disabled={busy || pedo.enabled}
+          aria-pressed={pedo.enabled} onClick={turnOn}>
+          <span><b>{pedo.enabled ? "Podomètre activé" : "Activer le podomètre"}</b><small>Ton téléphone te demandera l'accès à « {pedometerPermissionName()} »</small></span>
+          <span className="mono">{pedo.enabled ? "Oui" : "Non"}</span>
+        </button>
+      ) : (
+        <p className="ob-hint">{pedo ? "Le podomètre fonctionne dans l'appli YASS-GYM pour Android et iPhone. Tu pourras l'activer depuis l'onglet Suivi." : "…"}</p>
+      )}
+      {err && <p className="ob-hint" role="alert">{err}</p>}
+    </>
+  );
+}
+
 function Onboarding({ user, onDone, onLogout, onClose }) {
+  const [pedo, setPedo] = useState(null);
+  useEffect(() => { pedometerStatus().then(setPedo); }, []);
   const [step, setStep]     = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
@@ -257,36 +294,13 @@ function Onboarding({ user, onDone, onLogout, onClose }) {
         {id === "zones" && (
           <>
             <h1 className="disp h1">Une zone<br />sensible ?</h1>
-            <p className="ob-sub">Si tu as mal quelque part, indique-le : les exercices qui sollicitent cette zone seront signalés. Sinon, continue.</p>
-            <div className="pills">
-              {SENSITIVE_AREAS.map((a) => {
-                const on = p.sensitiveZones.includes(a.id);
-                return (
-                  <button type="button" key={a.id} className={on ? "on" : ""} aria-pressed={on}
-                    onClick={() => toggleZone(a.id)}>{a.label}<span aria-hidden="true">{on ? " ×" : " +"}</span></button>
-                );
-              })}
-            </div>
+            <p className="ob-sub">Si tu as mal quelque part, touche la zone sur le corps : les exercices qui la sollicitent seront signalés. Sinon, continue.</p>
+            <BodyZones value={p.sensitiveZones} onToggle={toggleZone} gender={p.gender} />
             <p className="ob-hint">Ce signalement est une aide, pas un avis médical. Tu pourras modifier ces zones dans les réglages.</p>
           </>
         )}
 
-        {id === "health" && (
-          <>
-            <HealthLogo size={72} />
-            <h1 className="disp h1" style={{ marginTop: 18 }}>Apple<br />Santé.</h1>
-            <p className="ob-sub">
-              Pas, fréquence cardiaque, calories actives : la synchronisation avec Santé
-              arrivera avec la version iPhone de YASS-GYM. Elle n'est pas encore disponible.
-            </p>
-            <button type="button" className={"ob-toggle" + (p.healthOptin ? " on" : "")}
-              aria-pressed={p.healthOptin} onClick={() => upd({ healthOptin: !p.healthOptin })}>
-              <span><b>Activer dès que possible</b><small>On reliera Santé à ton compte à la sortie de l'app iPhone</small></span>
-              <span className="mono">{p.healthOptin ? "Oui" : "Non"}</span>
-            </button>
-            <p className="ob-hint">En attendant, tes séances et tes calories sont suivies ici.</p>
-          </>
-        )}
+        {id === "health" && <PedometerStep pedo={pedo} onPedo={setPedo} />}
 
         {id === "recap" && (
           <div className="ob-recap">
@@ -304,7 +318,7 @@ function Onboarding({ user, onDone, onLogout, onClose }) {
               <div><dt>Rythme</dt><dd>{p.daysPerWeek} séance{p.daysPerWeek > 1 ? "s" : ""} par semaine</dd></div>
               <div><dt>Activités</dt><dd>{p.activities.map((a) => ACTIVITIES.find((x) => x.id === a)?.label).join(", ")}</dd></div>
               <div><dt>Zones sensibles</dt><dd>{p.sensitiveZones.length ? p.sensitiveZones.map((z) => SENSITIVE_AREAS.find((a) => a.id === z)?.label).join(", ") : "Aucune"}</dd></div>
-              <div><dt>Apple Santé</dt><dd>{p.healthOptin ? "À activer à la sortie de l'app" : "Non"}</dd></div>
+              <div><dt>Podomètre</dt><dd>{pedo?.enabled ? "Activé" : pedo?.available ? "Non" : "Dans l'appli mobile"}</dd></div>
             </dl>
             <p className="ob-hint">L'IMC est un repère indicatif : il ne tient pas compte de la masse musculaire.</p>
           </div>

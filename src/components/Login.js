@@ -3,7 +3,7 @@ import { api, setToken } from "../api";
 import { Logo, Close, photo } from "./Shell";
 import "./auth.css";
 
-const MIN_PASSWORD = 6;
+const MIN_PASSWORD = 8;
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
 // Score 0-4 : longueur, majuscule/minuscule, chiffre, caractère spécial

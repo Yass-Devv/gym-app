@@ -5,7 +5,10 @@ import { signToken, requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-const MIN_PASSWORD = 6;
+const MIN_PASSWORD = 8;
+const MAX_PASSWORD = 72; // bcrypt ignore ce qui dépasse 72 octets
+// Hash factice : la connexion prend le même temps que l'email existe ou non (on ne révèle pas quels comptes existent)
+const DUMMY_HASH = bcrypt.hashSync("mot-de-passe-factice", 10);
 
 const publicUser = (u) => ({
   id: u.id, name: u.name, email: u.email, gender: u.gender,
@@ -68,8 +71,11 @@ router.post("/register", async (req, res) => {
   if (!email || !isValidEmail(email)) return res.status(400).json({ error: "Email invalide." });
   if (typeof password !== "string" || password.length < MIN_PASSWORD)
     return res.status(400).json({ error: `Minimum ${MIN_PASSWORD} caractères.` });
+  if (Buffer.byteLength(password) > MAX_PASSWORD)
+    return res.status(400).json({ error: "Mot de passe trop long." });
+  if (email.length > 255)             return res.status(400).json({ error: "Email invalide." });
 
-  const hash = await bcrypt.hash(password, 10);
+  const hash = await bcrypt.hash(password, 12);
   try {
     const { rows } = await query(
       "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
@@ -89,7 +95,8 @@ router.post("/login", async (req, res) => {
 
   const { rows } = await query("SELECT * FROM users WHERE email = $1", [email]);
   const user = rows[0];
-  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+  const match = await bcrypt.compare(password.slice(0, 200), user?.password_hash || DUMMY_HASH);
+  if (!user || !match) {
     return res.status(401).json({ error: "Email ou mot de passe incorrect." });
   }
   res.json({ token: signToken(user), user: publicUser(user) });

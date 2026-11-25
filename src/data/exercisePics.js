@@ -31,6 +31,32 @@ const PATHS = {
   "s-detente": "commons/thumb/c/c3/Vertical_jump_measurement_test.png/330px-Vertical_jump_measurement_test.png",
   "f45": "commons/thumb/2/29/Airman_performing_lunge.jpg/330px-Airman_performing_lunge.jpg",
   "f55": "commons/thumb/b/b5/Barre_%D0%B2_SM_Stretching.jpg/330px-Barre_%D0%B2_SM_Stretching.jpg",
+  "h77": "commons/thumb/7/75/May_Squadron_Fitness_Challenge_120524-F-KB808-095.jpg/330px-May_Squadron_Fitness_Challenge_120524-F-KB808-095.jpg",
+  "f17": "commons/thumb/7/7a/Airborne_Burpee.jpg/330px-Airborne_Burpee.jpg",
+  "f28": "commons/thumb/e/e8/Girl_doing_bird_dog_yoga_pose.jpg/330px-Girl_doing_bird_dog_yoga_pose.jpg",
+  "f34": "commons/thumb/2/20/U.S._Airmen_with_the_90th_Security_Forces_Group_do_jumping_jacks_before_a_two-mile_pride_run_March_29%2C_2013%2C_at_F.E._Warren_Air_Force_Base%2C_Wyo_130329-F-JW079-027.jpg/330px-thumbnail.jpg",
+  "f53": "commons/thumb/7/7e/Side_Plank.jpg/330px-Side_Plank.jpg",
+  "f69": "commons/thumb/7/7f/Competition_heats_up_in_Kandahar_130518-A-KX461-017.jpg/330px-Competition_heats_up_in_Kandahar_130518-A-KX461-017.jpg",
+  "s-shadow": "commons/thumb/2/23/Photos_taken_at_Zebra_Boxing_Club_on_20th_September_2025_15.jpg/330px-Photos_taken_at_Zebra_Boxing_Club_on_20th_September_2025_15.jpg",
+  "s-crochets": "commons/thumb/f/f8/USMC-100301-M-2700C-001.jpg/330px-USMC-100301-M-2700C-001.jpg",
+  "s-uppercuts": "commons/thumb/3/3c/Uppercut_derecho.jpg/330px-Uppercut_derecho.jpg",
+  "s-esquives": "commons/thumb/3/3c/Slip2.jpg/330px-Slip2.jpg",
+  "s-3030": "commons/thumb/d/d6/Track_neck_and_neck.jpg/330px-Track_neck_and_neck.jpg",
+  "s-guerrier2": "commons/thumb/0/06/Warrior_II.jpg/330px-Warrior_II.jpg",
+  "s-isolations": "commons/thumb/5/5e/Erin_looks_lost_dwarfed_by_hips_and_veils%21_%288008097090%29.jpg/330px-Erin_looks_lost_dwarfed_by_hips_and_veils%21_%288008097090%29.jpg",
+  "s-frac-velo": "commons/thumb/9/94/Indoor_Cycle_Class_at_a_Gym.JPG/330px-Indoor_Cycle_Class_at_a_Gym.JPG",
+  "s-une-jambe": "commons/thumb/8/8d/Indoor_trainer.JPG/330px-Indoor_trainer.JPG",
+  "s-devil-press": "commons/thumb/c/c7/Fitness_Program_Saves_Airman%27s_Career_DVIDS125652.jpg/330px-Fitness_Program_Saves_Airman%27s_Career_DVIDS125652.jpg",
+  "s-echelle": "commons/thumb/6/6a/Agility_drill_reinforces_total-body_control_%289834715%29.jpg/330px-Agility_drill_reinforces_total-body_control_%289834715%29.jpg",
+  "s-pas-defensifs": "commons/thumb/a/a4/USMC-120811-M-2815I-001.jpg/330px-USMC-120811-M-2815I-001.jpg",
+  "f38": "commons/thumb/3/3a/Yoga_Teacher_Training_in_India_%28cropped%29.jpg/330px-Yoga_Teacher_Training_in_India_%28cropped%29.jpg",
+  "f33": "commons/thumb/a/a4/U_S_Marines%2C_Royal_Thai_Navy_Conduct_Train_in_Muay_Thai_Kickboxing_During_CARAT_Thailand_2026_%289809315%29.jpg/330px-U_S_Marines%2C_Royal_Thai_Navy_Conduct_Train_in_Muay_Thai_Kickboxing_During_CARAT_Thailand_2026_%289809315%29.jpg",
+  "s-double-unders": "commons/thumb/7/72/Somewhereto_practice_boxing_outside_Number_10_Downing_Street_%286211796087%29.jpg/330px-Somewhereto_practice_boxing_outside_Number_10_Downing_Street_%286211796087%29.jpg",
+  // Images créées pour YASS-GYM (public/images/exos), quand aucune photo libre ne montre l'exercice
+  "h27": "local:h27.jpg",
+  "h61": "local:h61.jpg",
+  "f9": "local:f9.jpg",
 };
 
-export const EX_PICS = Object.fromEntries(Object.entries(PATHS).map(([id, path]) => [id, BASE + path]));
+export const EX_PICS = Object.fromEntries(Object.entries(PATHS).map(([id, path]) => [id,
+  path.startsWith("local:") ? `${process.env.PUBLIC_URL}/images/exos/${path.slice(6)}` : BASE + path]));

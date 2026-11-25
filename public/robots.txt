@@ -1,3 +1,5 @@
 # https://www.robotstxt.org/robotstxt.html
+# Tout le site est indexable, sauf l'API (données privées des comptes)
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/

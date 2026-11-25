@@ -65,3 +65,33 @@ CREATE TABLE IF NOT EXISTS meals (
   created_at TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_meals_user_day ON meals(user_id, eaten_on);
+
+-- Défis : un défi lancé par une personne. Le catalogue (types, réglages possibles) est dans src/data/challenges.js.
+-- config = réglages choisis au lancement ; log = { "2026-11-16": valeur } (jour tenu, kilomètres, pas, secondes…)
+CREATE TABLE IF NOT EXISTS challenges (
+  id         SERIAL PRIMARY KEY,
+  user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type       VARCHAR(30)  NOT NULL,
+  config     JSONB        NOT NULL DEFAULT '{}',
+  started_on DATE         NOT NULL,
+  days       SMALLINT     NOT NULL,
+  status     VARCHAR(12)  NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'done', 'abandoned')),
+  log        JSONB        NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_challenges_user ON challenges(user_id, status);
+
+-- Pas comptés par le podomètre du téléphone, un total par jour.
+-- run_steps = part des pas faits en courant ; rejected = pas ignorés (trajet en véhicule, cadence impossible).
+-- km et kcal sont calculés par le serveur à l'enregistrement, d'après la taille, le poids et le sexe.
+CREATE TABLE IF NOT EXISTS steps (
+  user_id    INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day        DATE         NOT NULL,
+  steps      INTEGER      NOT NULL DEFAULT 0,
+  run_steps  INTEGER      NOT NULL DEFAULT 0,
+  rejected   INTEGER      NOT NULL DEFAULT 0,
+  km         NUMERIC(6,2) NOT NULL DEFAULT 0,
+  kcal       INTEGER      NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, day)
+);

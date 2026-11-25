@@ -1,0 +1,22 @@
+# Mise en ligne du serveur sur Render (render.com) : New → Blueprint → choisir ce dépôt GitHub.
+# La base PostgreSQL est hébergée à part (ex. Neon) : colle son adresse dans DATABASE_URL quand Render la demande.
+services:
+  - type: web
+    name: yass-gym-api
+    runtime: node
+    rootDir: server
+    plan: free            # gratuit : se met en veille après 15 min sans visite. "starter" = toujours allumé (payant)
+    buildCommand: npm ci
+    startCommand: npm start   # crée/met à jour les tables puis lance l'API
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false       # à coller à la main (adresse de la base Neon)
+      - key: CLIENT_URL
+        sync: false       # adresse du site web, ex. https://yass-gym.fr (sinon mets http://localhost:3000)

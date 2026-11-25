@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,800..900&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap');
+/* Les polices (Archivo, Bricolage Grotesque) sont chargées depuis public/index.html */
 
 *, *::before, *::after { box-sizing: border-box; }
 

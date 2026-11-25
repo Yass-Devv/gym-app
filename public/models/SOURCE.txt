@@ -1,0 +1,12 @@
+Modèles 3D des zones sensibles (corps-homme.glb, corps-femme.glb)
+
+Source : maillage de base et morphologies de MakeHuman
+https://github.com/makehumancommunity/makehuman (makehuman/data/3dobjs/base.obj
+et makehuman/data/targets/macrodetails/*.target)
+Licence des ressources MakeHuman : CC0 1.0 Universal (domaine public) — voir LICENSE.md du dépôt.
+
+Transformations faites pour YASS-GYM (script tools/makehuman-corps.py) :
+- morphologie jeune adulte, musclée et sèche (mélange égal des trois ethnies de MakeHuman) ;
+- conservation du corps et des yeux uniquement, mise à l'échelle en mètres, pieds au sol ;
+- ajout d'une tenue de sport (short, brassière pour la femme) avec liseré orange YASS-GYM ;
+- calcul des points des zones sensibles sur la peau à partir des articulations du modèle.

@@ -452,3 +452,91 @@ input { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ── Défis ─────────────────────────────────────────────────── */
+.df-body { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+.df-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.df-tile { position: relative; height: 168px; overflow: hidden; text-align: left; background: var(--carbone); color: var(--on-photo); border-radius: var(--r); transition: transform .12s; }
+.df-tile.wide { grid-column: 1 / -1; height: 210px; }
+.df-tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.1) 20%, rgba(0,0,0,.9)); }
+.df-tile .ph { transition: transform .4s ease, filter .3s; }
+.df-tile:hover .ph, .df-tile:focus-visible .ph { transform: scale(1.06); filter: grayscale(0) contrast(1.05); }
+.df-tile:active { transform: scale(.98); }
+.df-tile-txt { position: absolute; inset: auto 12px 11px 12px; z-index: 1; display: block; }
+.df-tile-txt .mono { display: block; font-size: 11px; }
+.df-tile-txt .disp { display: block; font-size: 23px; margin-top: 3px; }
+.df-tile.wide .df-tile-txt .disp { font-size: 34px; }
+.df-pitch { display: block; margin-top: 6px; font-size: 13.5px; line-height: 1.35; color: #c9c4ba; }
+.df-badge { position: absolute; top: 0; left: 0; z-index: 1; background: var(--acc); color: #0b0b0b; padding: 6px 10px; border-radius: 0 0 var(--r-sm) 0; font-size: 11px; }
+.df-rules { list-style: none; counter-reset: df; margin: 6px 0 4px; }
+.df-rules li { counter-increment: df; position: relative; border-top: 1px solid var(--trait); padding: 9px 0 9px 30px; font-size: 14px; color: var(--soft); }
+.df-rules li::before { content: counter(df); position: absolute; left: 0; top: 9px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--carbone); color: var(--acc); font: 800 11.5px/1 var(--label); }
+.df-sum { margin: 22px 0 14px; padding: 14px 16px; background: var(--carbone); border-radius: var(--r); }
+.df-sum b { display: block; margin: 4px 0; font-stretch: 75%; font-weight: 700; font-size: 17px; line-height: 1.2; text-transform: uppercase; }
+.df-sum .mono { display: block; }
+.df-check { margin: 20px 0 6px; padding: 14px 16px 6px; background: var(--carbone); border-radius: var(--r); }
+.df-check-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.df-check .day-nav { background: var(--noir); }
+.df-goal { margin: 10px 0 12px; font-size: 19px; }
+.df-yn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.df-yn.one { grid-template-columns: 1fr; }
+.df-yn button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border: 1px solid var(--trait2); border-radius: var(--r); font-stretch: 75%; font-weight: 800; font-size: 14.5px; letter-spacing: .03em; text-transform: uppercase; transition: background .15s, color .15s, border-color .15s, transform .1s; }
+.df-yn button:active { transform: scale(.97); }
+.df-yn button.on { background: var(--acc); border-color: var(--acc); color: var(--noir); }
+.df-yn button.no.on { background: var(--os); border-color: var(--os); color: var(--noir); }
+.df-num { display: grid; grid-template-columns: 1fr auto 110px; gap: 10px; align-items: center; margin-bottom: 4px; }
+.df-num .btn { min-height: 44px; padding: 0 10px; }
+.df-check .hist-line:first-of-type { margin-top: 8px; }
+.df-cells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 8px; }
+.df-cells.weeks { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
+.df-cells i { display: grid; place-items: center; height: 36px; border: 1px solid var(--trait); border-radius: var(--r-sm); font: 700 12px var(--label); font-style: normal; color: var(--gris); }
+.df-cells .ok, .df-legend .ok { background: var(--acc); border-color: var(--acc); color: var(--noir); }
+.df-cells .ko, .df-legend .ko { background: var(--carbone); border-color: var(--trait2); color: var(--gris); text-decoration: line-through; }
+.df-cells .tol, .df-legend .tol { border: 1px dashed var(--acc); color: var(--acc); }
+.df-cells .rest, .df-legend .rest { background: var(--os); border-color: var(--os); color: var(--noir); }
+.df-cells .now { border-color: var(--acc); color: var(--acc); }
+.df-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; }
+.df-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.df-legend i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--trait2); }
+
+/* ── Mannequin 3D des zones sensibles ─────────────────────── */
+.bz { margin: 10px 0 6px; }
+.bz-stage {
+  position: relative; height: 380px; border-radius: var(--r);
+  border: 1px solid var(--trait); overflow: hidden;
+  background: radial-gradient(ellipse at 50% 38%, var(--carbone), var(--noir) 72%);
+}
+.bz-stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.bz-load { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; }
+.bz-tip { position: absolute; left: 12px; bottom: 10px; font-size: 11px; pointer-events: none; }
+.bz-reset {
+  position: absolute; top: 10px; right: 10px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  padding: 6px 10px; min-height: 32px; border: 1px solid var(--trait2); border-radius: 999px; background: var(--noir);
+}
+.bz-reset:hover { color: var(--acc); border-color: var(--acc); }
+.bz-nav { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px; margin-top: 10px; }
+.bz-arrow {
+  width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--trait2);
+  font-size: 26px; line-height: 1; display: grid; place-items: center; padding-bottom: 3px;
+}
+.bz-arrow:hover { border-color: var(--acc); color: var(--acc); }
+.bz-arrow:active { transform: scale(.94); }
+.bz-cur { text-align: center; display: grid; gap: 2px; }
+.bz-cur b { font-size: 17px; }
+.bz-cur .mono { font-size: 12px; }
+.bz-toggle { width: 100%; margin-top: 10px; }
+.bz-chips { margin-top: 12px; }
+@media (max-width: 380px) { .bz-stage { height: 330px; } }
+
+/* ── Pas (podomètre) ──────────────────────────────────────── */
+.bars .stack { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+.bars .stack i { min-height: 0; }
+.bars .stack i:last-child { min-height: 2px; }
+.bars .stack.hi i:last-child { background: var(--acc); }
+.bars i.st, .df-legend i.bar-st { background: var(--acc-soft); }
+.bars .stack i.st { border-radius: 4px 4px 0 0; }
+.bars .stack i.st + i { border-radius: 0; }
+.df-legend i.bar-wo { background: var(--bar); }
+.steps-card { margin: 26px 0 4px; padding-top: 16px; border-top: 1px solid var(--trait); }
+.steps-card .big { margin-top: 4px; }
+.steps-card .btn { margin-top: 6px; }
